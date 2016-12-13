@@ -77,7 +77,7 @@ An integer dimension that starts at 1
 This is were the real magic happens, since all the optimizations will focus
 on this one. If I optimize anything at all.
 """
-immutable CartesianDimension <: Dimension{Signed}
+immutable CartesianDimension <: Dimension{Int}
     name::Symbol
     length::Int
 
@@ -100,14 +100,45 @@ Base.values(d::CartesianDimension) = 1:d.length
 
 name(d::Dimension) = d.name
 
-function Base.findin(d::CardinalDimension, x)
-    i = findin(d.states, x)
+"""
+Get the first state in this dimension
+"""
+function Base.first(d::StatefulDimension)
+    return first(d.states)
+end
+
+function Base.first(d::CartesianDimension)
+    return 1
+end
+
+"""
+Get the last state in this dimension
+"""
+function Base.last(d::StatefulDimension)
+    return last(d.states)
+end
+
+function Base.last(d::CartesianDimension)
+    return d.length
+end
+
+"""
+Return the data type of the dimension
+"""
+function dimtype(d::Dimension)
+    return typeof(first(d))
+end
+
+function Base.findin(d::StatefulDimension, x)
+    # the default findin doesn't work for arrays of strings apparently :/
+    i = d.states .== convert(dimtype(d), x)
 
     # states should all be unique
-    return isempty(i) ? 0 : i[1]
+    return any(i) ? find(i)[1] : 0
 end
 
 function Base.findin(d::CartesianDimension, x)
+    x = convert(Int, x)
     return (x < 1 || x > d.length) ?  0 : x
 end
 

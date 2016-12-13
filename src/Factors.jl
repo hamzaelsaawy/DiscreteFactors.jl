@@ -6,7 +6,8 @@ export Dimension,
        OrdinalUnitDimension,
        CartesianDimension,
 
-       name
+       name,
+       dimtype
 
 include("dimensions.jl")
 
