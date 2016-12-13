@@ -1,3 +1,4 @@
+let
 c = CardinalDimension(:C, ["as", "ab", "cd", "sd"])
 s = OrdinalStepDimension(:S, 'a', 2, 'z')
 u = OrdinalUnitDimension(:U, 0, 15)
@@ -57,13 +58,24 @@ l = CartesianDimension(:L, 31)
 @test last(u) == 15
 @test last(l) == 31
 
-@test dimtype(c) == String
-@test dimtype(s) == Char
-@test dimtype(u) == Int
-@test dimtype(l) == Int
+@test eltype(c) == String
+@test eltype(s) == Char
+@test eltype(u) == Int
+@test eltype(l) == Int
 
 @test all(values(c) .== ["as", "ab", "cd", "sd"])
 @test all(values(s) .== 'a':2:'z')
 @test all(values(u) .== 0:15)
 @test all(values(l) .== 1:31)
+end
+
+let 
+s2 = OrdinalStepDimension(:S2, 'a', 'y')
+
+@test findin(s2, 'x') == 24
+@test step(s2.states) == 1
+@test first(s2) == 'a'
+@test last(s2) == 'y'
+@test eltype(s2) == Char
+end
 
