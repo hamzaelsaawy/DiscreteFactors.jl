@@ -1,4 +1,6 @@
 abstract Dimension{T}
+# to support <, > comparisons
+abstract OrdinalDimension{T} <: Dimension{T}
 
 singleton_dimension(l) = error("Dimension is singleton with length $(l)")
 
@@ -10,7 +12,7 @@ immutable CardinalDimension{T} <: Dimension{T}
     states::AbstractArray{T, 1}
 
     function CardinalDimension(name::Symbol, states)
-        if length(unique(states)) != length(states)
+        if !allunique(states)
             error("States must be unique")
         end
 
@@ -32,7 +34,7 @@ Uses a Base.StepRange to enumerate possible states.
 Starts at variable `start`, steps by `step`, ends at `stop` (or less,
 if the math does't work out
 """
-immutable OrdinalStepDimension{T, S} <: Dimension{T}
+immutable OrdinalStepDimension{T, S} <: OrdinalDimension{T}
     name::Symbol
     states::StepRange{T, S}
 
@@ -50,10 +52,13 @@ end
 OrdinalStepDimension{T,S}(name::Symbol, start::T, step::S, stop::T) =
     OrdinalStepDimension{T,S}(name, start, step, stop)
 
+OrdinalStepDimension{T}(name::Symbol, start::T, stop::T) =
+    OrdinalStepDimension{T,Int}(name, start, 1, stop)
+
 """
 Similar to a UnitRange, enumerates values over start:stop
 """
-immutable OrdinalUnitDimension{T} <: Dimension{T}
+immutable OrdinalUnitDimension{T} <: OrdinalDimension{T}
     name::Symbol
     states::UnitRange{T}
 
@@ -77,69 +82,54 @@ An integer dimension that starts at 1
 This is were the real magic happens, since all the optimizations will focus
 on this one. If I optimize anything at all.
 """
-immutable CartesianDimension <: Dimension{Int}
+immutable CartesianDimension{T<:Integer} <: OrdinalDimension{T}
     name::Symbol
-    length::Int
+    states::Base.OneTo{T}
 
-    CartesianDimension(name::Symbol, length::Int) = length < 2 ?
-        singleton_dimension(length) : new(name, length)
+    CartesianDimension(name::Symbol, length::T) = length < convert(T, 2) ?
+        singleton_dimension(length) : new(name, Base.OneTo(length))
 end
 
-# all the dimensions that have a variable called states
-typealias StatefulDimension
-    Union{CardinalDimension, OrdinalUnitDimension, OrdinalStepDimension}
+CartesianDimension{T<:Integer}(name::Symbol, length::T) =
+    CartesianDimension{T}(name, length)
 
 ###############################################################################
 #                   Functions
 
-Base.length(d::StatefulDimension) = length(d.states)
-Base.length(d::CartesianDimension) = d.length
+Base.length(d::Dimension) = length(d.states)
 
-Base.values(d::StatefulDimension) = d.states
-Base.values(d::CartesianDimension) = 1:d.length
+Base.values(d::Dimension) = d.states
 
 name(d::Dimension) = d.name
 
 """
 Get the first state in this dimension
 """
-function Base.first(d::StatefulDimension)
+function Base.first(d::Dimension)
     return first(d.states)
-end
-
-function Base.first(d::CartesianDimension)
-    return 1
 end
 
 """
 Get the last state in this dimension
 """
-function Base.last(d::StatefulDimension)
+function Base.last(d::Dimension)
     return last(d.states)
 end
 
-function Base.last(d::CartesianDimension)
-    return d.length
-end
 
 """
 Return the data type of the dimension
 """
-function dimtype(d::Dimension)
+function Base.eltype(d::Dimension)
     return typeof(first(d))
 end
 
-function Base.findin(d::StatefulDimension, x)
+function Base.findin(d::Dimension, x)
     # the default findin doesn't work for arrays of strings apparently :/
-    i = d.states .== convert(dimtype(d), x)
+    i = d.states .== convert(eltype(d), x)
 
     # states should all be unique
     return any(i) ? find(i)[1] : 0
-end
-
-function Base.findin(d::CartesianDimension, x)
-    x = convert(Int, x)
-    return (x < 1 || x > d.length) ?  0 : x
 end
 
 ###############################################################################
@@ -147,11 +137,11 @@ end
 
 Base.mimewritable(::MIME"text/html", d::Dimension) = true
 
-Base.show(io::IO, d::StatefulDimension) =
-    println(io, "Dimension $(d.name): $(repr(d.states))")
-Base.show(io::IO, a::MIME"text/html", d::StatefulDimension) = show(io, d)
+Base.show(io::IO, d::Dimension) =
+    print(io, "$(d.name): $(repr(d.states)) ($(length(d)))")
+Base.show(io::IO, a::MIME"text/html", d::Dimension) = show(io, d)
 
 Base.show(io::IO, d::CartesianDimension) =
-    println(io, "Dimension $(d.name): 1:$(d.length)")
+    print(io, "$(d.name): 1:$(last(d))")
 Base.show(io::IO, a::MIME"text/html", d::CartesianDimension) = show(io, d)
 

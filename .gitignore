@@ -3,4 +3,5 @@
 *.jl.mem
 
 *.swp
+t.jl
 

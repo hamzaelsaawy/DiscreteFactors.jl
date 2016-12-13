@@ -1,5 +1,7 @@
 module Factors
 
+import DataFrames: nrow, DataFrame
+
 export Dimension,
        CardinalDimension,
        OrdinalStepDimension,
@@ -7,9 +9,20 @@ export Dimension,
        CartesianDimension,
 
        name,
-       dimtype
+       eltype,
+
+       Assignment,
+
+       Factor,
+       lengths,
+       indexof,
+       pattern,
+       getdim
+
+typealias Assignment Dict{Symbol, Any}
 
 include("dimensions.jl")
+include("factors_code.jl")
 
 end # module
 
