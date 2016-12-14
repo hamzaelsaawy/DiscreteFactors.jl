@@ -1,6 +1,6 @@
 module Factors
 
-import DataFrames: nrow, DataFrame
+import DataFrames
 
 export Dimension,
        CardinalDimension,

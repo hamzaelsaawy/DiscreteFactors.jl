@@ -1,8 +1,6 @@
-abstract Dimension{T}
-# to support <, > comparisons
-abstract OrdinalDimension{T} <: Dimension{T}
-
 singleton_dimension(l) = error("Dimension is singleton with length $(l)")
+
+abstract Dimension{T}
 
 """
 A dimension whose states emnumerated in an array. Order does not matter
@@ -11,7 +9,7 @@ immutable CardinalDimension{T} <: Dimension{T}
     name::Symbol
     states::AbstractArray{T, 1}
 
-    function CardinalDimension(name::Symbol, states)
+    function CardinalDimension(name::Symbol, states::T)
         if !allunique(states)
             error("States must be unique")
         end
@@ -27,6 +25,24 @@ end
 # I need to figure this parametric stuff out
 CardinalDimension{T}(name::Symbol, states::AbstractArray{T, 1}) =
    CardinalDimension{T}(name, states)
+
+#support <, > comparisons, and an ordering in the states
+immutable OrdinalDimension{T} <: Dimension{T}
+    name::Symbol
+    states::AbstractArray{T}
+
+    function OrdinalStepDimension(name::Symbol, states::T)
+        if !allunique(states)
+            error("States must be unique")
+        end
+
+        if length(states) < 2
+            singleton_dimension(length(states))
+        end
+
+        new(name, states)
+    end
+end
 
 """
 Uses a Base.StepRange to enumerate possible states.

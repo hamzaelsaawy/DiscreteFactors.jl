@@ -46,9 +46,37 @@ Initialize with a dictionary mapping dimension names (symbols) to their lenghts
 V will be a zero matrix with type eltype
 """
 function Factor{T<:Integer}(d::Dict{Symbol, T}, eltype)
-    dimensions = [CartesianDimension(s, l) for (s, l) in d]
+    dimensions = [CartesianDimension(x...) for x in d]
     Factor(dimensions, eltype)
 end
+
+"""
+Initialize with dimension names, a list of thier lengths, and type of v
+
+V will be a zero matrix with type eltype
+"""
+function Factor{T<:Integer}(dims::Vector{Symbol}, lens::Vector{T}, eltype)
+    if length(dims) != length(dims)
+        error("Number of dimensions and lengths do not match")
+    end
+
+    dimensions = [CartesianDimension(x...) for x in zip(dims, lens)]
+    Factor(dimensions, eltype)
+end
+
+"""
+Initialize with a vector of dimension names and a value array
+"""
+function Factor{V}(dims::Vector{Symbol}, v::Array{V})
+    if length(dims) != ndims(v)
+        error("Number of dimensions and dimensions of v do not match")
+    end
+
+    dimensions = [CartesianDimension(x...) for x in zip(dims, size(v))]
+    Factor(dimensions, v)
+end
+
+
 
 ###############################################################################
 #                   Methods
@@ -75,11 +103,6 @@ lengths(ft::Factor) = [size(ft)...]
 Total number of elements in the value mapping, v
 """
 Base.length(ft::Factor) = length(ft.v)
-
-"""
-Same as length(ft)
-"""
-nrow(ft::Factor) = length(ft)
 
 Base.sub2ind(ft::Factor, i...) = sub2ind(size(ft), i...)
 Base.ind2sub(ft::Factor, i) = ind2sub(size(ft), i)
@@ -154,7 +177,7 @@ function pattern(ft::Factor, names::Vector{Symbol})
     inners = vcat(1, cumprod(lens[1:(end-1)]))
     outers = Vector{Int}(length(ft) ./ lens[inds] ./ inners[inds])
 
-    hcat([repeat(Vector(1:length(d)), inner=i, outer=o) for (d, i, o) in 
+    hcat([repeat(Vector(1:length(d)), inner=i, outer=o) for (d, i, o) in
             zip(ft.dimensions[inds], inners[inds], outers)]...)
 end
 
@@ -164,24 +187,29 @@ function pattern(ft::Factor)
     inners = vcat(1, cumprod(lens[1:(end-1)]))
     outers = Vector{Int}(length(ft) ./ lens ./ inners)
 
-    hcat([repeat(Vector(1:length(d)), inner=i, outer=o) for (d, i, o) in 
+    hcat([repeat(Vector(1:length(d)), inner=i, outer=o) for (d, i, o) in
             zip(ft.dimensions, inners, outers)]...)
 end
 
-# Column access
-# ft[:x] => values
-function Base.getindex(ft::Factor, name::Symbol)
-    dim = getdim(ft, name)
-    return dim.states[pattern(ft, name)]
-end
+"""
+Gets the order of states of a dimension
+"""
+pettern_states(ft::Factor, name::Symbol) =
+    getdim(ft, name).states[pattern(ft, name)]
 
-function Base.getindex(ft::Factor, names::Vector{Symbol})
+function pattern_states(ft::Factor, names::Vector{Symbol})
     dims = getdim(ft, names)
     return hcat([d.states[pattern(ft, d.name)] for d in dims]...)
 end
 
-Base.getindex(ft::Factor, ::Colon) =
+function pattern_states(ft::Factor) =
     hcat([d.states[pattern(ft, d.name)] for d in ft.dimensions]...)
+
+
+# Column access returns the dimensions
+function Base.getindex(ft::Factor, name::Symbol) = getdim(ft, name)
+function Base.getindex(ft::Factor, names::Vector{Symbol}) = getdim(ft, names)
+Base.getindex(ft::Factor, ::Colon) = ft.dimensions
 
 """
 Appends a new dimension to a Factor
@@ -224,6 +252,17 @@ function Base.get(ft::Factor, a::Assignment)
         end
     end
     return ft.v[ind...]
+end
+
+
+
+
+function DataFrames.DataFrame(ft::Factor)
+    df = DataFrames.DataFrame(ft[:])
+    DataFrames.rename!(df, names(df), names(ft))
+    df[:v] = ft.v[:]
+
+    return df
 end
 
 ###############################################################################
