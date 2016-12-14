@@ -9,7 +9,7 @@ immutable CardinalDimension{T} <: Dimension{T}
     name::Symbol
     states::AbstractArray{T, 1}
 
-    function CardinalDimension(name::Symbol, states::T)
+    function CardinalDimension(name::Symbol, states::AbstractArray{T, 1})
         if !allunique(states)
             error("States must be unique")
         end
@@ -22,16 +22,17 @@ immutable CardinalDimension{T} <: Dimension{T}
     end
 end
 
-# I need to figure this parametric stuff out
 CardinalDimension{T}(name::Symbol, states::AbstractArray{T, 1}) =
    CardinalDimension{T}(name, states)
 
-#support <, > comparisons, and an ordering in the states
-immutable OrdinalDimension{T} <: Dimension{T}
-    name::Symbol
-    states::AbstractArray{T}
+abstract AbstractOrdinalDimension{T} <: Dimension{T}
 
-    function OrdinalStepDimension(name::Symbol, states::T)
+#support <, > comparisons, and an ordering in the states
+immutable OrdinalDimension{T} <: AbstractOrdinalDimension{T}
+    name::Symbol
+    states::AbstractArray{T, 1}
+
+    function OrdinalDimension(name::Symbol, states::AbstractArray{T, 1})
         if !allunique(states)
             error("States must be unique")
         end
@@ -43,6 +44,10 @@ immutable OrdinalDimension{T} <: Dimension{T}
         new(name, states)
     end
 end
+
+OrdinalDimension{T}(name::Symbol, states::AbstractArray{T, 1}) =
+    OrdinalDimension{T}(name, states)
+
 
 """
 Uses a Base.StepRange to enumerate possible states.
@@ -50,7 +55,7 @@ Uses a Base.StepRange to enumerate possible states.
 Starts at variable `start`, steps by `step`, ends at `stop` (or less,
 if the math does't work out
 """
-immutable OrdinalStepDimension{T, S} <: OrdinalDimension{T}
+immutable OrdinalStepDimension{T, S} <: AbstractOrdinalDimension{T}
     name::Symbol
     states::StepRange{T, S}
 
@@ -74,7 +79,7 @@ OrdinalStepDimension{T}(name::Symbol, start::T, stop::T) =
 """
 Similar to a UnitRange, enumerates values over start:stop
 """
-immutable OrdinalUnitDimension{T} <: OrdinalDimension{T}
+immutable OrdinalUnitDimension{T} <: AbstractOrdinalDimension{T}
     name::Symbol
     states::UnitRange{T}
 
@@ -98,7 +103,7 @@ An integer dimension that starts at 1
 This is were the real magic happens, since all the optimizations will focus
 on this one. If I optimize anything at all.
 """
-immutable CartesianDimension{T<:Integer} <: OrdinalDimension{T}
+immutable CartesianDimension{T<:Integer} <: AbstractOrdinalDimension{T}
     name::Symbol
     states::Base.OneTo{T}
 
@@ -112,10 +117,13 @@ CartesianDimension{T<:Integer}(name::Symbol, length::T) =
 ###############################################################################
 #                   Functions
 
+==(d1::Dimension, d2::Dimension) = 
+    (d1.name == d2.name) &&
+    (length(d1.states) == length(d2.states)) && 
+    all(d1.states .== d2.states)
+
 Base.length(d::Dimension) = length(d.states)
-
 Base.values(d::Dimension) = d.states
-
 name(d::Dimension) = d.name
 
 """
@@ -131,7 +139,6 @@ Get the last state in this dimension
 function Base.last(d::Dimension)
     return last(d.states)
 end
-
 
 """
 Return the data type of the dimension

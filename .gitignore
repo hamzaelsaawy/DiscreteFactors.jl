@@ -3,5 +3,9 @@
 *.jl.mem
 
 *.swp
+*.swo
+
+# ignore these and don't judge how I write code
 t.jl
+m.jl
 

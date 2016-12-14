@@ -1,9 +1,11 @@
 module Factors
 
+import Base.==
 import DataFrames
 
 export Dimension,
        CardinalDimension,
+       OrdinalDimension,
        OrdinalStepDimension,
        OrdinalUnitDimension,
        CartesianDimension,
@@ -17,9 +19,8 @@ export Dimension,
        lengths,
        indexof,
        pattern,
+       pattern_states,
        getdim
-
-typealias Assignment Dict{Symbol, Any}
 
 include("dimensions.jl")
 include("factors_code.jl")

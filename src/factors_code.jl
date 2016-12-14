@@ -1,3 +1,5 @@
+typealias Assignment Dict{Symbol, Any}
+
 type Factor{D<:Dimension, V}
     dimensions::Vector{D}
     # the value mapped to each instance
@@ -30,12 +32,12 @@ Factor{D<:Dimension, V}(dimensions::Vector{D}, v::Array{V}) =
 Factor{V}(dimension::Dimension, v::Array{V}) =
     Factor{typeof(dimension), V}([dimension], v)
 
-function Factor{D<:Dimension}(dimensions::Vector{D}, eltype)
+function Factor{D<:Dimension}(dimensions::Vector{D}, eltype=Float64)
     v = zeros(eltype, [length(d) for d in dimensions]...)
     Factor{D, eltype}(dimensions, v)
 end
 
-function Factor(d::Dimension, eltype)
+function Factor(d::Dimension, eltype=Float64)
     v = zeros(eltype, length(d))
     Factor{typeof(d), eltype}([d], v)
 end
@@ -202,14 +204,17 @@ function pattern_states(ft::Factor, names::Vector{Symbol})
     return hcat([d.states[pattern(ft, d.name)] for d in dims]...)
 end
 
-function pattern_states(ft::Factor) =
+pattern_states(ft::Factor) =
     hcat([d.states[pattern(ft, d.name)] for d in ft.dimensions]...)
 
 
 # Column access returns the dimensions
-function Base.getindex(ft::Factor, name::Symbol) = getdim(ft, name)
-function Base.getindex(ft::Factor, names::Vector{Symbol}) = getdim(ft, names)
+Base.getindex(ft::Factor, name::Symbol) = getdim(ft, name)
+Base.getindex(ft::Factor, names::Vector{Symbol}) = getdim(ft, names)
 Base.getindex(ft::Factor, ::Colon) = ft.dimensions
+
+Base.getindex(ft::Factor, index::Integer) = ft.dimensions[index]
+Base.getindex(ft::Factor, index::Vector{Integer}) = ft.dimensions[index]
 
 """
 Appends a new dimension to a Factor

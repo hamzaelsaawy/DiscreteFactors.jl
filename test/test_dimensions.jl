@@ -77,13 +77,24 @@ l = CartesianDimension(:L, 31)
 @test eltype(u) == Int
 @test eltype(l) == Int
 @test all(values(c) .== ["as", "ab", "cd", "sd"])
-@test all(values(s) .== ['2', 'J', 'Q', 'K', 'A'])
+@test all(values(o) .== ['2', 'J', 'Q', 'K', 'A'])
 @test all(values(s) .== 'a':2:'z')
 @test all(values(u) .== 0:15)
 @test all(values(l) .== 1:31)
 end
 
-let 
+let
+X1 = OrdinalUnitDimension(:X, 3, 5)
+X2 = OrdinalUnitDimension(:X, 3, 5)
+X3 = OrdinalUnitDimension(:X, 3, 6)
+s = OrdinalStepDimension(:S, 'a', 'y')
+
+@test X1 == X2
+@test X1 != X3
+@test X2 != X3
+@test X2 != s
+end
+let
 # default step value of 1
 s2 = OrdinalStepDimension(:S2, 'a', 'y')
 
