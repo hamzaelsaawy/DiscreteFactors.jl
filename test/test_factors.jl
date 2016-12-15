@@ -39,8 +39,8 @@ l = CartesianDimension(:L, 31)
     @test all(names(ft) .== [:C, :O, :S, :L])
     @test length(ft) == prod(lengths(ft))
     @test getdim(ft, :L) == l
-    @test indexof(ft, :C) == 1
-    @test indexof(ft, :L) == 4
+    @test findin(ft, :C) == 1
+    @test findin(ft, :L) == 4
     @test ft[:S] == s
     @test ft[4] == l
 

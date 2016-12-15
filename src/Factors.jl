@@ -17,13 +17,13 @@ export Dimension,
 
        Factor,
        lengths,
-       indexof,
        pattern,
        pattern_states,
        getdim
 
 include("dimensions.jl")
 include("factors_code.jl")
+include("factor_reduce.jl")
 
 end # module
 

@@ -29,7 +29,7 @@ end
 Factor{D<:Dimension, V}(dimensions::Vector{D}, v::Array{V}) =
     Factor{D, V}(dimensions, v)
 
-Factor{V}(dimension::Dimension, v::Array{V}) =
+Factor{V}(dimension::Dimension, v::Vector{V}) =
     Factor{typeof(dimension), V}([dimension], v)
 
 function Factor{D<:Dimension}(dimensions::Vector{D}, eltype=Float64)
@@ -93,29 +93,33 @@ Names of each dimension
 Base.names(ft::Factor) = map(name, ft.dimensions)
 
 Base.ndims(ft::Factor) = ndims(ft.v)
+
 """
 Returns the number of states in each dimension as a tuple
 """
 Base.size(ft::Factor) = size(ft.v)
+
 """
 Same as size, but as a vector instead of a tuple
 """
 lengths(ft::Factor) = [size(ft)...]
+
 """
 Total number of elements in the value mapping, v
 """
 Base.length(ft::Factor) = length(ft.v)
+Base.length(ft::Factor, dim::Dimension) = length(getdim(ft, dim))
 
 Base.sub2ind(ft::Factor, i...) = sub2ind(size(ft), i...)
 Base.ind2sub(ft::Factor, i) = ind2sub(size(ft), i)
 
-not_in_factor_error(name) = error("$(name) is not in the factor")
+not_in_factor_error(name) = error("$(name) is not a valid dimension")
 
 """
 Returns the index of dimension `name` in ft. 0 if not in ft.
 """
-function indexof(ft::Factor, name::Symbol)
-    i = find(names(ft) .== name)
+function Base.findin(ft::Factor, dim::Symbol)
+    i = find(names(ft) .== dim)
     if isempty(i)
         return 0
     else
@@ -123,37 +127,37 @@ function indexof(ft::Factor, name::Symbol)
     end
 end
 
-indexof(ft::Factor, names::Vector{Symbol}) = map(s -> indexof(ft, s), names)
+Base.findin(ft::Factor, dims::Vector{Symbol}) = map(s -> findin(ft, s), dims)
 
-function getdim(ft::Factor, name::Symbol)
-    i = indexof(ft, name)
+function getdim(ft::Factor, dim::Symbol)
+    i = findin(ft, dim)
 
     if i == 0
-        not_in_factor_error(name)
+        not_in_factor_error(dim)
     end
 
     return ft.dimensions[i]
 end
 
-function getdim(ft::Factor, names::Vector{Symbol})
-    inds = indexof(ft, names)
+function getdim(ft::Factor, dims::Vector{Symbol})
+    inds = findin(ft, dims)
 
-    zero_loc = findin(inds, [0])
-    if !isempty(zero_loc)
-        not_in_factor_error(names[zero_loc[1]])
+    zero_loc = findfirst(inds, 0)
+    if zero_loc != 0
+        not_in_factor_error(dims[zero_loc])
     end
 
     return ft.dimensions[inds]
 end
 
 """
-Returns the pattern of `name` without the states
+Returns the pattern of `dim` without the states
 """
-function pattern(ft::Factor, name::Symbol)
-    ind = indexof(ft, name)
+function pattern(ft::Factor, dim::Symbol)
+    ind = findin(ft, dim)
 
     if ind == 0
-        not_in_factor_error(name)
+        not_in_factor_error(dim)
     end
 
     lens = lengths(ft)
@@ -165,12 +169,12 @@ function pattern(ft::Factor, name::Symbol)
     repeat(Vector(1:length(ft.dimensions[ind])), inner=inner, outer=outer)
 end
 
-function pattern(ft::Factor, names::Vector{Symbol})
-    inds = indexof(ft, names)
+function pattern(ft::Factor, dims::Vector{Symbol})
+    inds = findin(ft, dims)
 
-    zero_loc = findin(inds, [0])
-    if !isempty(zero_loc)
-        not_in_factor_error(names[zero_loc[1]])
+    zero_loc = findfirst(inds, 0)
+    if zero_loc != 0
+        not_in_factor_error(dims[zero_loc])
     end
 
     lens = lengths(ft)
@@ -196,11 +200,11 @@ end
 """
 Gets the order of states of a dimension
 """
-pettern_states(ft::Factor, name::Symbol) =
-    getdim(ft, name).states[pattern(ft, name)]
+pettern_states(ft::Factor, dim::Symbol) =
+    getdim(ft, dim).states[pattern(ft, dims)]
 
-function pattern_states(ft::Factor, names::Vector{Symbol})
-    dims = getdim(ft, names)
+function pattern_states(ft::Factor, dims::Vector{Symbol})
+    dims = getdim(ft, dims)
     return hcat([d.states[pattern(ft, d.name)] for d in dims]...)
 end
 
@@ -209,8 +213,8 @@ pattern_states(ft::Factor) =
 
 
 # Column access returns the dimensions
-Base.getindex(ft::Factor, name::Symbol) = getdim(ft, name)
-Base.getindex(ft::Factor, names::Vector{Symbol}) = getdim(ft, names)
+Base.getindex(ft::Factor, dim::Symbol) = getdim(ft, dim)
+Base.getindex(ft::Factor, dims::Vector{Symbol}) = getdim(ft, dims)
 Base.getindex(ft::Factor, ::Colon) = ft.dimensions
 
 Base.getindex(ft::Factor, index::Integer) = ft.dimensions[index]
@@ -259,11 +263,8 @@ function Base.get(ft::Factor, a::Assignment)
     return ft.v[ind...]
 end
 
-
-
-
 function DataFrames.DataFrame(ft::Factor)
-    df = DataFrames.DataFrame(ft[:])
+    df = DataFrames.DataFrame(pattern_states(ft))
     DataFrames.rename!(df, names(df), names(ft))
     df[:v] = ft.v[:]
 
