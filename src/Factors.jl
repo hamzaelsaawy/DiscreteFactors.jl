@@ -1,6 +1,6 @@
 module Factors
 
-import Base.==
+import Base: .==, .!=, .<, .<=, .>, .>=, in, ==
 import DataFrames
 
 export Dimension,

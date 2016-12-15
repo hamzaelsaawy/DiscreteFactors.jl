@@ -117,9 +117,9 @@ CartesianDimension{T<:Integer}(name::Symbol, length::T) =
 ###############################################################################
 #                   Functions
 
-==(d1::Dimension, d2::Dimension) = 
+==(d1::Dimension, d2::Dimension) =
     (d1.name == d2.name) &&
-    (length(d1.states) == length(d2.states)) && 
+    (length(d1.states) == length(d2.states)) &&
     all(d1.states .== d2.states)
 
 Base.length(d::Dimension) = length(d.states)
@@ -148,11 +148,67 @@ function Base.eltype(d::Dimension)
 end
 
 function Base.findin(d::Dimension, x)
-    # the default findin doesn't work for arrays of strings apparently :/
-    i = d.states .== convert(eltype(d), x)
-
     # states should all be unique
-    return any(i) ? find(i)[1] : 0
+    return findfirst(d.states .== convert(eltype(d), x))
+end
+
+function .==(d::Dimension, x)
+    # states should all be unique
+    return d.states .== convert(eltype(d), x)
+end
+
+.!=(d::Dimension, x) = !(d .== x)
+
+# can't be defined in terms of each b/c of
+#  non-trivial case of x ∉ d
+function .<(d::AbstractOrdinalDimension, x)
+    ind = d .==  x
+    loc = findfirst(ind)
+
+    # if x is in the array
+    if loc != 0
+        ind[1:loc] = true
+        ind[loc] = false
+    else
+        ind[:] = false
+    end
+
+    return ind
+end
+
+function .>(d::AbstractOrdinalDimension, x)
+    ind = d .== x
+    loc = findfirst(ind)
+
+    # if x is in the array
+    if loc != 0
+        ind[loc:end] = true
+        ind[loc] = false
+    else
+        ind[:] = false
+    end
+
+    return ind
+end
+
+function .<=(d::AbstractOrdinalDimension, x)
+    ind = d .== x
+    loc = findfirst(ind)
+    ind[1:loc] = true
+
+    return ind
+end
+
+function .>=(d::AbstractOrdinalDimension, x)
+    ind = d .== x
+    loc = findfirst(ind)
+    ind[loc:end] = true
+
+    return ind
+end
+
+function in(x, d::Dimension)
+    return any(d.states .== convert(eltype(d), x))
 end
 
 ###############################################################################

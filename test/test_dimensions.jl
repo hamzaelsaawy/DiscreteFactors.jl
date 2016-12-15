@@ -71,6 +71,42 @@ l = CartesianDimension(:L, 31)
 @test last(u) == 15
 @test last(l) == 31
 
+@test "ab" in c
+@test !("asc" in c)
+
+@test 'J' in o
+@test !('3' in o)
+
+@test 'c' in s
+@test !('b' in s)
+
+@test 13 in u
+@test !(16 in u)
+
+@test 16 in l
+@test !(0 in l)
+
+@test all((c .== "cd") .== BitArray([false, false, true, false]))
+@test all((c .== "waldo") .== falses(4))
+
+@test all((o .== 'Q') .== BitArray([false, false, true, false, false]))
+@test all((o .== '3') .== falses(5))
+
+@test all((s .== 'b') .== falses(13))
+
+@test all((u .== 16) .== falses(16))
+
+@test all((l .== 33) .== falses(31))
+
+# cardinal doesn't have less than, greater than
+@test_throws MethodError c < "cd"
+
+@test all((o .<= 'Q') .== BitArray([true, true, true, false, false]))
+@test all((o .>= 'J') .== BitArray([false, true, true, true, true]))
+@test all((o .> 'A') .== falses(5))
+@test all((o .> 'N') .== falses(5))
+@test all((o .> '0') .== falses(5))
+
 @test eltype(c) == String
 @test eltype(o) == Char
 @test eltype(s) == Char
