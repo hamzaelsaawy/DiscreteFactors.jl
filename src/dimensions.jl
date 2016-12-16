@@ -1,4 +1,7 @@
-singleton_dimension(l) = error("Dimension is singleton with length $(l)")
+singleton_dimension_error(l) = throw(
+        ArgumentError("Dimension is singleton with length $(l)"))
+
+non_unique_states_error() = throw(ArgumentError("States must be unique"))
 
 abstract Dimension{T}
 
@@ -11,11 +14,11 @@ immutable CardinalDimension{T} <: Dimension{T}
 
     function CardinalDimension(name::Symbol, states::AbstractArray{T, 1})
         if !allunique(states)
-            error("States must be unique")
+            non_unique_states_error()
         end
 
         if length(states) < 2
-            singleton_dimension(length(states))
+            singleton_dimension_error(length(states))
         end
 
         new(name, states)
@@ -34,11 +37,11 @@ immutable OrdinalDimension{T} <: AbstractOrdinalDimension{T}
 
     function OrdinalDimension(name::Symbol, states::AbstractArray{T, 1})
         if !allunique(states)
-            error("States must be unique")
+            non_unique_states_error()
         end
 
         if length(states) < 2
-            singleton_dimension(length(states))
+            singleton_dimension_error(length(states))
         end
 
         new(name, states)
@@ -63,7 +66,7 @@ immutable OrdinalStepDimension{T, S} <: AbstractOrdinalDimension{T}
         states = start:step:stop
 
         if length(states) < 2
-            singleton_dimension(length(states))
+            singleton_dimension_error(length(states))
         end
 
         new(name, states)
@@ -87,7 +90,7 @@ immutable OrdinalUnitDimension{T} <: AbstractOrdinalDimension{T}
         states = start:stop
 
         if length(states) < 2
-            singleton_dimension(length(states))
+            singleton_dimension_error(length(states))
         end
 
         new(name, states)
@@ -108,7 +111,7 @@ immutable CartesianDimension{T<:Integer} <: AbstractOrdinalDimension{T}
     states::Base.OneTo{T}
 
     CartesianDimension(name::Symbol, length::T) = length < convert(T, 2) ?
-        singleton_dimension(length) : new(name, Base.OneTo(length))
+        singleton_dimension_error(length) : new(name, Base.OneTo(length))
 end
 
 CartesianDimension{T<:Integer}(name::Symbol, length::T) =

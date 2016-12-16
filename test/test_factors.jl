@@ -6,9 +6,9 @@ s = OrdinalStepDimension(:S, 'a', 2, 'z')
 l1 = CartesianDimension(:L, 3)
 l2 = OrdinalDimension(:L, [3, 4])
 
-@test_throws ErrorException Factor([c, l1, o, s, l2], Float64)
-@test_throws ErrorException Factor([c, o], rand(4, 6))
-@test_throws ErrorException Factor([c, o], rand(4, 6, 3))
+@test_throws ArgumentError Factor([c, l1, o, s, l2], Float64)
+@test_throws ArgumentError Factor([c, o], rand(4, 6))
+@test_throws ArgumentError Factor([c, o], rand(4, 6, 3))
 end
 
 let

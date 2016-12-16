@@ -5,24 +5,24 @@ s = OrdinalStepDimension(:S, 'a', 2, 'z')
 u = OrdinalUnitDimension(:U, 0, 15)
 l = CartesianDimension(:L, 31)
 
-@test_throws ErrorException CardinalDimension(:C, ['a', 'a', 'b'])
-@test_throws ErrorException CardinalDimension(:C, ['a'])
-@test_throws ErrorException CardinalDimension(:C, [])
+@test_throws ArgumentError CardinalDimension(:C, ['a', 'a', 'b'])
+@test_throws ArgumentError CardinalDimension(:C, ['a'])
+@test_throws ArgumentError CardinalDimension(:C, [])
 
-@test_throws ErrorException OrdinalDimension(:O, ['a', 'a', 'b'])
-@test_throws ErrorException OrdinalDimension(:O, ['a'])
-@test_throws ErrorException OrdinalDimension(:O, [])
+@test_throws ArgumentError OrdinalDimension(:O, ['a', 'a', 'b'])
+@test_throws ArgumentError OrdinalDimension(:O, ['a'])
+@test_throws ArgumentError OrdinalDimension(:O, [])
 
 @test_throws MethodError OrdinalStepDimension(:S, 1, 'a', 3)
 @test_throws MethodError OrdinalStepDimension(:S, 'a', 'b', 'c')
-@test_throws ErrorException OrdinalStepDimension(:S, 1, 1, 1)
+@test_throws ArgumentError OrdinalStepDimension(:S, 1, 1, 1)
 
-@test_throws ErrorException OrdinalUnitDimension(:U, 1, 1)
-@test_throws ErrorException OrdinalUnitDimension(:U, 1, -1)
+@test_throws ArgumentError OrdinalUnitDimension(:U, 1, 1)
+@test_throws ArgumentError OrdinalUnitDimension(:U, 1, -1)
 @test_throws MethodError OrdinalUnitDimension(:U, 1, 'a')
 
-@test_throws ErrorException CartesianDimension(:C, 1)
-@test_throws ErrorException CartesianDimension(:C, -2)
+@test_throws ArgumentError CartesianDimension(:C, 1)
+@test_throws ArgumentError CartesianDimension(:C, -2)
 @test_throws MethodError CartesianDimension(:C, "as")
 
 @test name(c) == :C

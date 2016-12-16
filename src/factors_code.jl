@@ -7,15 +7,15 @@ type Factor{D<:Dimension, V}
 
     function Factor(dimensions::Vector{D}, v::Array{V})
         if length(dimensions) != ndims(v)
-            error("v must have as many dimensions as dimensions")
+            throw(ArgumentError("v must have as many dimensions as dimensions"))
         end
 
         if [size(v)...] != [length(d) for d in dimensions]
-            error("Number of states must match values size")
+            throw(ArgumentError("Number of states must match values size"))
         end
 
         if !allunique(map(name, dimensions))
-            error("Dimension names must be unique")
+            throw(ArgumentError("Dimension names must be unique"))
         end
 
         if :v in map(name, dimensions)
@@ -59,7 +59,7 @@ V will be a zero matrix with type eltype
 """
 function Factor{T<:Integer}(dims::Vector{Symbol}, lens::Vector{T}, eltype)
     if length(dims) != length(dims)
-        error("Number of dimensions and lengths do not match")
+        throw(ArgumentError("Number of dimensions and lengths do not match"))
     end
 
     dimensions = [CartesianDimension(x...) for x in zip(dims, lens)]
@@ -71,7 +71,8 @@ Initialize with a vector of dimension names and a value array
 """
 function Factor{V}(dims::Vector{Symbol}, v::Array{V})
     if length(dims) != ndims(v)
-        error("Number of dimensions and dimensions of v do not match")
+        throw(ArgumentError(
+                    "Number of dimensions and dimensions of v do not match"))
     end
 
     dimensions = [CartesianDimension(x...) for x in zip(dims, size(v))]
@@ -113,7 +114,8 @@ Base.length(ft::Factor, dim::Dimension) = length(getdim(ft, dim))
 Base.sub2ind(ft::Factor, i...) = sub2ind(size(ft), i...)
 Base.ind2sub(ft::Factor, i) = ind2sub(size(ft), i)
 
-not_in_factor_error(name) = error("$(name) is not a valid dimension")
+not_in_factor_error(name) = throw(
+        ArgumentError("$(name) is not a valid dimension"))
 
 """
 Returns the index of dimension `name` in ft. 0 if not in ft.

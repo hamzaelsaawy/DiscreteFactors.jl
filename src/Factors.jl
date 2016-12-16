@@ -19,7 +19,8 @@ export Dimension,
        lengths,
        pattern,
        pattern_states,
-       getdim
+       getdim,
+       reducedim!
 
 include("dimensions.jl")
 include("factors_code.jl")
