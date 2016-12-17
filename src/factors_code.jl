@@ -1,3 +1,8 @@
+#
+# Factors Code
+#
+# Main file for Factors
+
 typealias Assignment Dict{Symbol, Any}
 
 type Factor{D<:Dimension, V}
@@ -15,7 +20,7 @@ type Factor{D<:Dimension, V}
         end
 
         if !allunique(map(name, dimensions))
-            throw(ArgumentError("Dimension names must be unique"))
+            non_unique_dims_error()
         end
 
         if :v in map(name, dimensions)
@@ -79,8 +84,6 @@ function Factor{V}(dims::Vector{Symbol}, v::Array{V})
     Factor(dimensions, v)
 end
 
-
-
 ###############################################################################
 #                   Methods
 
@@ -109,13 +112,13 @@ lengths(ft::Factor) = [size(ft)...]
 Total number of elements in the value mapping, v
 """
 Base.length(ft::Factor) = length(ft.v)
-Base.length(ft::Factor, dim::Dimension) = length(getdim(ft, dim))
+Base.length(ft::Factor, dim::Symbol) = length(getdim(ft, dim))
+Base.length(ft::Factor, dims::Vector{Symbol}) =
+    [length(ft, dim) for dim in dims]
 
 Base.sub2ind(ft::Factor, i...) = sub2ind(size(ft), i...)
 Base.ind2sub(ft::Factor, i) = ind2sub(size(ft), i)
 
-not_in_factor_error(name) = throw(
-        ArgumentError("$(name) is not a valid dimension"))
 
 """
 Returns the index of dimension `name` in ft. 0 if not in ft.
@@ -231,7 +234,7 @@ function Base.push!(ft::Factor, dim::Dimension)
     end
 
     v = repeat(ft.v, outer=vcat(repeat([1], outer=ndims(ft.v)), length(dim)))
-    push!(ft.dimensions, dim)
+    ft.dimensions = push!(Vector{Dimension}(ft.dimensions), dim)
     ft.v = v
 
     return ft
@@ -263,14 +266,6 @@ function Base.get(ft::Factor, a::Assignment)
         end
     end
     return ft.v[ind...]
-end
-
-function DataFrames.DataFrame(ft::Factor)
-    df = DataFrames.DataFrame(pattern_states(ft))
-    DataFrames.rename!(df, names(df), names(ft))
-    df[:v] = ft.v[:]
-
-    return df
 end
 
 ###############################################################################

@@ -33,7 +33,11 @@ l = CartesianDimension(:L, 31)
 
     @test ndims(ft) == 4
     @test size(ft) == (4, 5, 13, 31)
-    @test lengths(ft) == [4, 5, 13, 31]
+    @test all(lengths(ft) .== [4, 5, 13, 31])
+    @test length(ft, :S) == 13
+    @test length(ft, :O) == 5
+    @test length(ft, :L) == 31
+    @test all(length(ft, [:L, :S, :O]) .== [31, 13, 5])
     @test all(ft.v .== 0)
     @test eltype(ft)[2] == Int
     @test all(names(ft) .== [:C, :O, :S, :L])

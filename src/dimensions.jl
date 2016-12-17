@@ -1,7 +1,7 @@
-singleton_dimension_error(l) = throw(
-        ArgumentError("Dimension is singleton with length $(l)"))
-
-non_unique_states_error() = throw(ArgumentError("States must be unique"))
+#
+# Dimensions
+#
+# Main file for Dimension datatype
 
 abstract Dimension{T}
 

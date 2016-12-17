@@ -1,6 +1,9 @@
+#__precompile__(true)
+
 module Factors
 
 import Base: .==, .!=, .<, .<=, .>, .>=, in, ==
+# for conversion to DataFrames ...
 import DataFrames
 
 export Dimension,
@@ -22,9 +25,15 @@ export Dimension,
        getdim,
        reducedim!
 
+include("errors.jl")
 include("dimensions.jl")
 include("factors_code.jl")
-include("factor_reduce.jl")
+include("factors_dims.jl")
+include("factors_dataframes.jl")
 
 end # module
+
+# TODO add FactorView or subarray version to access subarray, then squeeze ...
+# TODO add norm() and normalize() functions
+# TODO apply function across dimension??
 
