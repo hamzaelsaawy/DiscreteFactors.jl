@@ -32,7 +32,7 @@ type Factor{D<:Dimension, V}
 end
 
 Factor(eltype=Float64) =
-    Factor{Dimension, eltype}(Dimension[], squeeze(zero(eltype, 0), 1))
+    Factor{Dimension, eltype}(Dimension[], squeeze(zeros(eltype, 1), 1))
 
 Factor{D<:Dimension, V}(dimensions::Vector{D}, v::Array{V}) =
     Factor{D, V}(dimensions, v)

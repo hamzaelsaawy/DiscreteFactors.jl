@@ -119,8 +119,8 @@ let
 ft = Factor(Int)
 @test ft.dimensions == Dimension[]
 @test ft.v == squeeze([0], 1)
-@test lenth(ft) == 1
-@test size(ft) == []
-@test eltype(ft) == (Factors.Dimension{T},Int64)
+@test length(ft) == 1
+@test size(ft) == ()
+@test eltype(ft) == (Factors.Dimension, Int64)
 end
 

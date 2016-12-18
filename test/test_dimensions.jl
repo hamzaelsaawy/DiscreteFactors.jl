@@ -130,7 +130,8 @@ fakeX = OrdinalDimension(:X, [3, 4, 5])
 @test X1 != X3
 @test X2 != X3
 @test X2 != s
-@test X1 != fakeX
+# I don't know how I feel about this
+@test X1 == fakeX
 end
 
 let
