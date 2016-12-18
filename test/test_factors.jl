@@ -43,8 +43,8 @@ l = CartesianDimension(:L, 31)
     @test all(names(ft) .== [:C, :O, :S, :L])
     @test length(ft) == prod(lengths(ft))
     @test getdim(ft, :L) == l
-    @test findin(ft, :C) == 1
-    @test findin(ft, :L) == 4
+    @test indexin(ft, :C) == 1
+    @test indexin(ft, :L) == 4
     @test ft[:S] == s
     @test ft[4] == l
 
@@ -113,5 +113,14 @@ expected = ["bob" 'a';
             "bob" 'c';
             "bill" 'c']
 @test all(expected .== pattern_states(f))
+end
+
+let
+ft = Factor(Int)
+@test ft.dimensions == Dimension[]
+@test ft.v == squeeze([0], 1)
+@test lenth(ft) == 1
+@test size(ft) == []
+@test eltype(ft) == (Factors.Dimension{T},Int64)
 end
 

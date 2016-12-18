@@ -31,6 +31,9 @@ type Factor{D<:Dimension, V}
     end
 end
 
+Factor(eltype=Float64) =
+    Factor{Dimension, eltype}(Dimension[], squeeze(zero(eltype, 0), 1))
+
 Factor{D<:Dimension, V}(dimensions::Vector{D}, v::Array{V}) =
     Factor{D, V}(dimensions, v)
 
@@ -121,21 +124,24 @@ Base.ind2sub(ft::Factor, i) = ind2sub(size(ft), i)
 
 
 """
-Returns the index of dimension `name` in ft. 0 if not in ft.
+Returns the index of dimension `dims` in `ft`. Returns 0 if not in `ft`.
 """
-function Base.findin(ft::Factor, dim::Symbol)
-    i = find(names(ft) .== dim)
-    if isempty(i)
-        return 0
+function Base.indexin(ft::Factor, dims)
+    if isa(dims, Symbol)
+        return indexin([dims], names(ft))[1]
+    elseif isa(dims, Vector{Symbol})
+        return indexin(dims, names(ft))
+    elseif isa(dims, Dimension)
+        return indexin([dims], ft.dimensions)[1]
+    elseif isa(dims, Vector{Dimension})
+        return indexin(dims, ft.dimensions)
     else
-        return i[1]
+        throw(ArgumentError("Unsupported argument type: $typeof(dims)"))
     end
 end
 
-Base.findin(ft::Factor, dims::Vector{Symbol}) = map(s -> findin(ft, s), dims)
-
 function getdim(ft::Factor, dim::Symbol)
-    i = findin(ft, dim)
+    i = indexin(ft, dim)
 
     if i == 0
         not_in_factor_error(dim)
@@ -145,7 +151,7 @@ function getdim(ft::Factor, dim::Symbol)
 end
 
 function getdim(ft::Factor, dims::Vector{Symbol})
-    inds = findin(ft, dims)
+    inds = indexin(ft, dims)
 
     zero_loc = findfirst(inds, 0)
     if zero_loc != 0
@@ -159,7 +165,7 @@ end
 Returns the pattern of `dim` without the states
 """
 function pattern(ft::Factor, dim::Symbol)
-    ind = findin(ft, dim)
+    ind = indexin(ft, dim)
 
     if ind == 0
         not_in_factor_error(dim)
@@ -175,7 +181,7 @@ function pattern(ft::Factor, dim::Symbol)
 end
 
 function pattern(ft::Factor, dims::Vector{Symbol})
-    inds = findin(ft, dims)
+    inds = indexin(ft, dims)
 
     zero_loc = findfirst(inds, 0)
     if zero_loc != 0
@@ -257,7 +263,7 @@ function Base.get(ft::Factor, a::Assignment)
     for (i, d) in enumerate(ft.dimensions)
         if haskey(a, d.name)
             # index in each dimension is location of value
-            ind[i] = findin(d, a[d.name])
+            ind[i] = indexin(d, a[d.name])
             if ind[i] == 0
                 # if a[d] is not in assignment
                 #  return an empty array

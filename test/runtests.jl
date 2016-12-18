@@ -1,6 +1,6 @@
 using Factors
 using Base.Test
-import DataFrames: DataFrame
+using DataFrames
 
 include("test_dimensions.jl")
 include("test_factors.jl")

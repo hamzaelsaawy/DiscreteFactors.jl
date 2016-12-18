@@ -19,7 +19,7 @@ function Base.reducedim{D<:Dimension, V<:Number}(op, ft::Factor{D, V},
         invalid_dims_error()
     end
 
-    inds = findin(ft, dims)
+    inds = indexin(ft, dims)
     # get rid of dimensions not in ft
     inds = sort!(inds[inds .!= 0])
 
@@ -44,7 +44,7 @@ function Base.reducedim{D<:Dimension, V<:Number}(op, ft::Factor{D, V},
     return ft
 end
 
-function reducedim!{D<:Dimension, V<:Number}(op, ft::Factor{D, V}, dims, 
+function reducedim!{D<:Dimension, V<:Number}(op, ft::Factor{D, V}, dims,
         v0=nothing)
     if isa(dims, Symbol)
         dims = [dims]
@@ -54,7 +54,7 @@ function reducedim!{D<:Dimension, V<:Number}(op, ft::Factor{D, V}, dims,
         invalid_dims_error()
     end
 
-    inds = findin(ft, dims)
+    inds = indexin(ft, dims)
     # get rid of dimensions not in ft
     inds = sort!(inds[inds .!= 0])
 
@@ -124,7 +124,7 @@ function Base.broadcast!(f, ft::Factor, dims, values)
         invalid_dims_error()
     end
 
-    inds = findin(ft, dims)
+    inds = indexin(ft, dims)
     # get rid of dimensions not in ft
     inds = inds[inds .!= 0]
     dims = dims[inds .!= 0]
@@ -151,5 +151,100 @@ function Base.broadcast!(f, ft::Factor, dims, values)
     end
 
     return ft
+end
+
+"""
+Joins two factos. Only two kinds are allowed: inner and outer
+
+Outer returns a Factor with the union of the two dimensions
+The two factors are combined with Base.broadcast(op, ...)
+
+Inner keeps only the intersect between the two
+The extra dimensions are first reduced with reducedim(reducehow, ...)
+and then the two factors are combined with:
+    op(ft1[intersect].v, ft2[intersect.v])
+"""
+function Base.join(op, ft1::Factor, ft2::Factor, kind=:outer,
+        reducehow=nothing, v0=nothing)
+    # dimensions in common
+    #  more than just names, so will be same type, states (hopefully?)
+    common = intersect(ft1.dimensions, ft2.dimensions)
+
+    if kind == :outer
+        # the first dimensions are all from ft1
+        new_dims = union(ft1.dimensions, ft2.dimensions)
+
+        # permuate the common dimensions in ft2 to the front
+        perm = collect(1:ndims(ft2))
+        # find which dims in ft2 are shared
+        is_common2 = indexin(ft2.dimensions, common) .!= 0
+        # have their indices be moved to the front
+        perm = vcat(perm[is_common2], perm[!is_common2])
+        temp = permutedims(ft2.v, perm)
+
+        # now reshape it by lining up the common dims in ft2 with those in ft1
+        #  boolean for which new dimensions come from ft1 only
+        is_unique1 = indexin(new_dims, setdiff(ft1.dimensions, common))
+        # set those dims to have dimension 1 for data in ft2
+        reshape_lengths = map(length, new_dims)
+        nd1 = ndims(ft1)
+        new_v = duplicate(ft1.v, (reshape_lengths[(nd1+1):end]...))
+        reshape_lengths[is_unique1 .!= 0] = 1
+
+        # broadcast will automatically expand the later dimensions of ft1.v
+        broadcast!(op, new_v, new_v, reshape(temp, (reshape_lengths...)))
+    elseif kind == :inner
+        new_dims = getdim(ft1, common)
+
+        if isempty(common)
+            # weird magic for a zero-dimensional array
+            v_new = squeeze(zero(eltype(ft1), 0), 1)
+        else
+            if reducehow == nothing
+                throw(ArgumentError("Need reducehow"))
+            end
+
+            inds1 = (find(indexin(ft1.dimensions, common))...)
+            inds2 = (find(indexin(ft2.dimensions, common))...)
+
+            if v0 != nothing
+                v1_new = squeeze(reducedim(op, ft1.v, inds1, v0), inds)
+                v2_new = squeeze(reducedim(op, ft2.v, inds2, v0), inds)
+            else
+                v1_new = squeeze(reducedim(op, ft1.v, inds1), inds)
+                v2_new = squeeze(reducedim(op, ft2.v, inds2), inds)
+        new_m = zeros(eltype(ft1.v), reshape_lengths)
+            end
+            v_new = op(v1_new, v2_new)
+        end
+    else
+        throw(ArgumentError("$(kind) is not a supported join type"))
+    end
+
+    return Factor(new_dims, new_v)
+end
+
+
+"""
+A version of repeate that only repeates a matrix through higer dimensions dims
+"""
+function duplicate(A::Array, dims::Base.Dims)
+    size_in = size(A)
+    size_out = (size_in..., dims...)::Dims
+    ndA = ndims(A)
+
+    B = similar(A, size_out)
+    indices_out = Vector{Any}(ndims(B))
+    indices_out[1:ndA] = Colon()
+
+    indices_inner = Vector{Int}(length(dims))
+
+    for index in 1:prod(dims)
+        Base.ind2sub!(indices_inner, dims, index)
+        indices_out[(ndA+1):end] = indices_inner
+        B[indices_out...] = A
+    end
+
+    return B
 end
 

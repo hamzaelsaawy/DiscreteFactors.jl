@@ -1,4 +1,4 @@
-#__precompile__(true)
+# __precompile__(true)
 
 module Factors
 
@@ -23,7 +23,8 @@ export Dimension,
        pattern,
        pattern_states,
        getdim,
-       reducedim!
+       reducedim!,
+       duplicate
 
 include("errors.jl")
 include("dimensions.jl")
@@ -36,4 +37,5 @@ end # module
 # TODO add FactorView or subarray version to access subarray, then squeeze ...
 # TODO add norm() and normalize() functions
 # TODO apply function across dimension??
+# TODO broadcast_reduce
 

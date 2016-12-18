@@ -124,12 +124,15 @@ X1 = OrdinalUnitDimension(:X, 3, 5)
 X2 = OrdinalUnitDimension(:X, 3, 5)
 X3 = OrdinalUnitDimension(:X, 3, 6)
 s = OrdinalStepDimension(:S, 'a', 'y')
+fakeX = OrdinalDimension(:X, [3, 4, 5])
 
 @test X1 == X2
 @test X1 != X3
 @test X2 != X3
 @test X2 != s
+@test X1 != fakeX
 end
+
 let
 # default step value of 1
 s2 = OrdinalStepDimension(:S2, 'a', 'y')
