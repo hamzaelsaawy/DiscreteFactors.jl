@@ -37,27 +37,25 @@ l = CartesianDimension(:L, 31)
 @test length(u) == 16
 @test length(l) == 31
 
-@test findin(c, "ab") == 2
-@test findin(c, "waldo") == 0
-@test_throws MethodError findin(c, 16) == 0
+@test indexin(["ab"], c) == [2]
+@test indexin(["waldo"], c) == [0]
+@test_throws MethodError indexin([16], c)
 
-@test findin(o, '2') == 1
-@test findin(o, 'K') == 4
-@test findin(o, '3') == 0
+@test indexin(['2'], o) == [1]
+@test indexin('K', o) == 4
+@test indexin(['3'], o) == [0]
+@test indexin(:, o) == [1, 2, 3, 4, 5]
 
-@test findin(s, 'c') == 2
-@test findin(s, 'b') == 0
-@test findin(s, 16) == 0
+@test indexin(['c'], s) == [2]
+@test indexin(['b'], s) == [0]
+@test indexin('a':'c', s) == [1, 0, 2]
+@test_throws MethodError indexin([16], s)
 
-@test findin(u, 0) == 1
-@test findin(u, 15)== 16
-@test findin(u, 16) == 0
+@test indexin([0, 15, 16], u) == [1, 16, 0]
 
-@test findin(l, 0) == 0
-@test findin(l, 16)== 16
-@test findin(l, 1) == 1
-@test findin(l, 31) == 31
-@test findin(l, 32) == 0
+@test indexin(0, l) == 0
+@test indexin([16], l)== [16]
+@test indexin([1, 31, 58], l) == [1, 31, 0]
 
 @test first(c) == "as"
 @test first(o) == '2'
@@ -125,6 +123,7 @@ X2 = OrdinalUnitDimension(:X, 3, 5)
 X3 = OrdinalUnitDimension(:X, 3, 6)
 s = OrdinalStepDimension(:S, 'a', 'y')
 fakeX = OrdinalDimension(:X, [3, 4, 5])
+fakeX2 = CardinalDimension(:X, [3, 4, 5])
 
 @test X1 == X2
 @test X1 != X3
@@ -132,13 +131,14 @@ fakeX = OrdinalDimension(:X, [3, 4, 5])
 @test X2 != s
 # I don't know how I feel about this
 @test X1 == fakeX
+@test X1 != fakeX2
 end
 
 let
 # default step value of 1
 s2 = OrdinalStepDimension(:S2, 'a', 'y')
 
-@test findin(s2, 'x') == 24
+@test indexin('x', s2) == 24
 @test step(s2.states) == 1
 @test first(s2) == 'a'
 @test last(s2) == 'y'

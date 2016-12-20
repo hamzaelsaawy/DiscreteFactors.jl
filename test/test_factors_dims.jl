@@ -35,8 +35,5 @@ df_original = DataFrame(ft)
     end
 end
 
-#ft = Factor([x, y, z], map(Char, rand(64:95, 3, 2, 2)))
-
-#error("test join with same-name factors but differnt states")
 #error("test join with ft2 only having dimesnions in ft1. and vice versa")
 

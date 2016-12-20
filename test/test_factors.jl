@@ -43,10 +43,10 @@ l = CartesianDimension(:L, 31)
     @test all(names(ft) .== [:C, :O, :S, :L])
     @test length(ft) == prod(lengths(ft))
     @test getdim(ft, :L) == l
-    @test indexin(ft, :C) == 1
-    @test indexin(ft, :L) == 4
+    @test indexin([:C], ft) == [1]
+    @test indexin([:L], ft) == [4]
     @test ft[:S] == s
-    @test ft[4] == l
+    @test ft.dimensions[4] == l
 
     ft2 = permutedims(ft, [3, 2, 1, 4])
 
@@ -57,9 +57,9 @@ l = CartesianDimension(:L, 31)
     @test eltype(ft2)[2] == Int
     @test all(names(ft2) .== [:S, :O, :C, :L])
     @test length(ft2) == prod(lengths(ft))
-    @test (ft[1] == ft2[3])
-    @test ft[3] == ft2[1]
-    @test ft2[2] == o
+    @test ft.dimensions[1] == ft2.dimensions[3]
+    @test ft.dimensions[3] == ft2.dimensions[1]
+    @test ft2.dimensions[2] == o
 
     permutedims!(ft, [3, 2, 1, 4])
     @test all(names(ft) .== names(ft2))

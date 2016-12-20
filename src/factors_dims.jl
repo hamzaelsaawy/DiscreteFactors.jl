@@ -19,7 +19,7 @@ function Base.reducedim{D<:Dimension, V<:Number}(op, ft::Factor{D, V},
         invalid_dims_error()
     end
 
-    inds = indexin(ft, dims)
+    inds = indexin(dims, ft)
     # get rid of dimensions not in ft
     inds = sort!(inds[inds .!= 0])
 
@@ -54,7 +54,7 @@ function reducedim!{D<:Dimension, V<:Number}(op, ft::Factor{D, V}, dims,
         invalid_dims_error()
     end
 
-    inds = indexin(ft, dims)
+    inds = indexin(dims, ft)
     # get rid of dimensions not in ft
     inds = sort!(inds[inds .!= 0])
 
@@ -124,7 +124,7 @@ function Base.broadcast!(f, ft::Factor, dims, values)
         invalid_dims_error()
     end
 
-    inds = indexin(ft, dims)
+    inds = indexin(dims, ft)
     # get rid of dimensions not in ft
     inds = inds[inds .!= 0]
     dims = dims[inds .!= 0]
@@ -204,8 +204,8 @@ function Base.join(op, ft1::Factor, ft2::Factor, kind=:outer,
                 throw(ArgumentError("Need reducehow"))
             end
 
-            inds1 = (find(indexin(ft1.dimensions, common))...)
-            inds2 = (find(indexin(ft2.dimensions, common))...)
+            inds1 = (findin(ft1.dimensions, common)...)
+            inds2 = (findin(ft2.dimensions, common)...)
 
             if v0 != nothing
                 v1_new = squeeze(reducedim(op, ft1.v, inds1, v0), inds)
@@ -225,24 +225,20 @@ function Base.join(op, ft1::Factor, ft2::Factor, kind=:outer,
 end
 
 
+*(ft1, ft2) = join(*, ft1, ft2)
+
 """
 A version of repeate that only repeates a matrix through higer dimensions dims
 """
 function duplicate(A::Array, dims::Base.Dims)
     size_in = size(A)
+    length_in = length(A)
     size_out = (size_in..., dims...)::Dims
-    ndA = ndims(A)
 
     B = similar(A, size_out)
-    indices_out = Vector{Any}(ndims(B))
-    indices_out[1:ndA] = Colon()
-
-    indices_inner = Vector{Int}(length(dims))
 
     for index in 1:prod(dims)
-        Base.ind2sub!(indices_inner, dims, index)
-        indices_out[(ndA+1):end] = indices_inner
-        B[indices_out...] = A
+        copy!(B, (index - 1) * length_in + 1, A, 1, length_in)
     end
 
     return B

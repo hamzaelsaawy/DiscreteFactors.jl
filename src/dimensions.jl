@@ -29,6 +29,7 @@ CardinalDimension{T}(name::Symbol, states::AbstractArray{T, 1}) =
    CardinalDimension{T}(name, states)
 
 abstract AbstractOrdinalDimension{T} <: Dimension{T}
+abstract OrdinalRangeDimension{T} <: AbstractOrdinalDimension{T}
 
 #support <, > comparisons, and an ordering in the states
 immutable OrdinalDimension{T} <: AbstractOrdinalDimension{T}
@@ -51,14 +52,13 @@ end
 OrdinalDimension{T}(name::Symbol, states::AbstractArray{T, 1}) =
     OrdinalDimension{T}(name, states)
 
-
 """
 Uses a Base.StepRange to enumerate possible states.
 
 Starts at variable `start`, steps by `step`, ends at `stop` (or less,
 if the math does't work out
 """
-immutable OrdinalStepDimension{T, S} <: AbstractOrdinalDimension{T}
+immutable OrdinalStepDimension{T, S} <: OrdinalRangeDimension{T}
     name::Symbol
     states::StepRange{T, S}
 
@@ -82,7 +82,7 @@ OrdinalStepDimension{T}(name::Symbol, start::T, stop::T) =
 """
 Similar to a UnitRange, enumerates values over start:stop
 """
-immutable OrdinalUnitDimension{T} <: AbstractOrdinalDimension{T}
+immutable OrdinalUnitDimension{T} <: OrdinalRangeDimension{T}
     name::Symbol
     states::UnitRange{T}
 
@@ -106,7 +106,7 @@ An integer dimension that starts at 1
 This is were the real magic happens, since all the optimizations will focus
 on this one. If I optimize anything at all.
 """
-immutable CartesianDimension{T<:Integer} <: AbstractOrdinalDimension{T}
+immutable CartesianDimension{T<:Integer} <: OrdinalRangeDimension{T}
     name::Symbol
     states::Base.OneTo{T}
 
@@ -119,11 +119,6 @@ CartesianDimension{T<:Integer}(name::Symbol, length::T) =
 
 ###############################################################################
 #                   Functions
-
-==(d1::Dimension, d2::Dimension) =
-    (d1.name == d2.name) &&
-    (length(d1.states) == length(d2.states)) &&
-    all(d1.states .== d2.states)
 
 Base.length(d::Dimension) = length(d.states)
 Base.values(d::Dimension) = d.states
@@ -146,14 +141,60 @@ end
 """
 Return the data type of the dimension
 """
-function Base.eltype(d::Dimension)
-    return typeof(first(d))
+function Base.eltype{T}(::Dimension{T})
+    return T
 end
 
-function Base.findin(d::Dimension, x)
-    # states should all be unique
-    return findfirst(d.states .== convert(eltype(d), x))
+###############################################################################
+#                   Indexing
+
+# custom indexin for integer (and float?) ranges
+function Base.indexin{T<:Integer}(xs::Vector{T}, d::OrdinalRangeDimension{T})
+    inds = zeros(Int, size(xs))
+
+    for (i, x) in enumerate(xs)
+        if first(d.states) <= x <= last(d.states)
+            (ind, rem) = divrem(x - first(d.states), step(d.states))
+            if rem == 0
+                inds[i] = ind + 1
+            end
+        end
+    end
+
+    return inds
 end
+
+function Base.indexin{T}(x::T, d::Dimension{T})
+    return first(indexin([x], d.states))
+end
+
+function Base.indexin{T}(xs::Vector{T}, d::Dimension{T})
+    return indexin(xs, d.states)
+end
+
+function Base.indexin{T}(r::Range{T}, d::Dimension{T})
+    return indexin(collect(r), d.states)
+end
+
+function Base.indexin{T}(::Colon, d::Dimension{T})
+    return collect(1:length(d))
+end
+
+###############################################################################
+#                   Comparisons and Equality 
+
+# ensure that cardinal and ordinal dimensions will always be unequal
+==(::CardinalDimension, ::AbstractOrdinalDimension) = false
+
+==(d1::CardinalDimension, d2::CardinalDimension) =
+    (d1.name == d2.name) &&
+    (length(d1.states) == length(d2.states)) &&
+    all(d1.states .== d2.states)
+
+==(d1::AbstractOrdinalDimension, d2::AbstractOrdinalDimension) =
+    (d1.name == d2.name) &&
+    (length(d1.states) == length(d2.states)) &&
+    all(d1.states .== d2.states)
 
 function .==(d::Dimension, x)
     # states should all be unique

@@ -3,7 +3,7 @@
 #
 # Main file for Factors
 
-typealias Assignment Dict{Symbol, Any}
+typealias Assignment{T<:Any} Dict{Symbol, T}
 
 type Factor{D<:Dimension, V}
     dimensions::Vector{D}
@@ -65,7 +65,7 @@ Initialize with dimension names, a list of thier lengths, and type of v
 
 V will be a zero matrix with type eltype
 """
-function Factor{T<:Integer}(dims::Vector{Symbol}, lens::Vector{T}, eltype)
+function Factor{T<:Integer}(dims::Vector{Symbol}, lens::Vector{T}, eltype=Float64)
     if length(dims) != length(dims)
         throw(ArgumentError("Number of dimensions and lengths do not match"))
     end
@@ -79,8 +79,8 @@ Initialize with a vector of dimension names and a value array
 """
 function Factor{V}(dims::Vector{Symbol}, v::Array{V})
     if length(dims) != ndims(v)
-        throw(ArgumentError(
-                    "Number of dimensions and dimensions of v do not match"))
+        throw(ArgumentError("Number of dimensions and dimensions " *
+                    "of v do not match"))
     end
 
     dimensions = [CartesianDimension(x...) for x in zip(dims, size(v))]
@@ -119,20 +119,12 @@ Base.length(ft::Factor, dim::Symbol) = length(getdim(ft, dim))
 Base.length(ft::Factor, dims::Vector{Symbol}) =
     [length(ft, dim) for dim in dims]
 
-Base.sub2ind(ft::Factor, i...) = sub2ind(size(ft), i...)
-Base.ind2sub(ft::Factor, i) = ind2sub(size(ft), i)
-
-
 """
 Returns the index of dimension `dims` in `ft`. Returns 0 if not in `ft`.
 """
-function Base.indexin(ft::Factor, dims)
-    if isa(dims, Symbol)
-        return indexin([dims], names(ft))[1]
-    elseif isa(dims, Vector{Symbol})
+function Base.indexin(dims, ft::Factor)
+    if isa(dims, Vector{Symbol})
         return indexin(dims, names(ft))
-    elseif isa(dims, Dimension)
-        return indexin([dims], ft.dimensions)[1]
     elseif isa(dims, Vector{Dimension})
         return indexin(dims, ft.dimensions)
     else
@@ -141,7 +133,7 @@ function Base.indexin(ft::Factor, dims)
 end
 
 function getdim(ft::Factor, dim::Symbol)
-    i = indexin(ft, dim)
+    i = indexin([dim], ft)[1]
 
     if i == 0
         not_in_factor_error(dim)
@@ -151,7 +143,7 @@ function getdim(ft::Factor, dim::Symbol)
 end
 
 function getdim(ft::Factor, dims::Vector{Symbol})
-    inds = indexin(ft, dims)
+    inds = indexin(dims, ft)
 
     zero_loc = findfirst(inds, 0)
     if zero_loc != 0
@@ -165,7 +157,7 @@ end
 Returns the pattern of `dim` without the states
 """
 function pattern(ft::Factor, dim::Symbol)
-    ind = indexin(ft, dim)
+    ind = indexin([dim], ft)[1]
 
     if ind == 0
         not_in_factor_error(dim)
@@ -181,7 +173,7 @@ function pattern(ft::Factor, dim::Symbol)
 end
 
 function pattern(ft::Factor, dims::Vector{Symbol})
-    inds = indexin(ft, dims)
+    inds = indexin([dims], ft)
 
     zero_loc = findfirst(inds, 0)
     if zero_loc != 0
@@ -211,7 +203,7 @@ end
 """
 Gets the order of states of a dimension
 """
-pettern_states(ft::Factor, dim::Symbol) =
+pattern_states(ft::Factor, dim::Symbol) =
     getdim(ft, dim).states[pattern(ft, dims)]
 
 function pattern_states(ft::Factor, dims::Vector{Symbol})
@@ -221,15 +213,6 @@ end
 
 pattern_states(ft::Factor) =
     hcat([d.states[pattern(ft, d.name)] for d in ft.dimensions]...)
-
-
-# Column access returns the dimensions
-Base.getindex(ft::Factor, dim::Symbol) = getdim(ft, dim)
-Base.getindex(ft::Factor, dims::Vector{Symbol}) = getdim(ft, dims)
-Base.getindex(ft::Factor, ::Colon) = ft.dimensions
-
-Base.getindex(ft::Factor, index::Integer) = ft.dimensions[index]
-Base.getindex(ft::Factor, index::Vector{Integer}) = ft.dimensions[index]
 
 """
 Appends a new dimension to a Factor
@@ -253,26 +236,6 @@ function Base.permutedims!(ft::Factor, perm)
 end
 
 Base.permutedims(ft::Factor, perm) = permutedims!(deepcopy(ft), perm)
-
-"""
-Get values with dimensions consistent with an assignment
-"""
-function Base.get(ft::Factor, a::Assignment)
-    ind =x = Array{Any}(ndims(ft))
-    ind[:] = Colon()
-    for (i, d) in enumerate(ft.dimensions)
-        if haskey(a, d.name)
-            # index in each dimension is location of value
-            ind[i] = indexin(d, a[d.name])
-            if ind[i] == 0
-                # if a[d] is not in assignment
-                #  return an empty array
-                return ft.v[[]]
-            end
-        end
-    end
-    return ft.v[ind...]
-end
 
 ###############################################################################
 #                   IO Stuff
