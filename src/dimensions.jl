@@ -6,155 +6,151 @@
 abstract Dimension{T}
 
 """
+    CardinalDimension(name, states)
+
 A dimension whose states emnumerated in an array. Order does not matter
 """
 immutable CardinalDimension{T} <: Dimension{T}
     name::Symbol
-    states::AbstractArray{T, 1}
+    states::AbstractVector{T}
 
-    function CardinalDimension(name::Symbol, states::AbstractArray{T, 1})
-        if !allunique(states)
-            non_unique_states_error()
-        end
-
-        if length(states) < 2
-            singleton_dimension_error(length(states))
-        end
+    function CardinalDimension(name::Symbol, states::AbstractVector{T})
+        allunique(states) || non_unique_states_error()
+        length(states) > 1 || singleton_dimension_error(length(states))
 
         new(name, states)
     end
 end
 
-CardinalDimension{T}(name::Symbol, states::AbstractArray{T, 1}) =
+CardinalDimension{T}(name::Symbol, states::AbstractVector{T}) =
    CardinalDimension{T}(name, states)
 
+# where order matters
 abstract AbstractOrdinalDimension{T} <: Dimension{T}
-abstract OrdinalRangeDimension{T} <: AbstractOrdinalDimension{T}
+# stored as a range
+abstract AbstractRangeDimension{T} <: AbstractOrdinalDimension{T}
 
 #support <, > comparisons, and an ordering in the states
 immutable OrdinalDimension{T} <: AbstractOrdinalDimension{T}
     name::Symbol
-    states::AbstractArray{T, 1}
+    states::AbstractVector{T}
 
-    function OrdinalDimension(name::Symbol, states::AbstractArray{T, 1})
-        if !allunique(states)
-            non_unique_states_error()
-        end
-
-        if length(states) < 2
-            singleton_dimension_error(length(states))
-        end
+    function OrdinalDimension(name::Symbol, states::AbstractVector{T})
+        allunique(states) || non_unique_states_error()
+        length(states) > 1 || singleton_dimension_error(length(states))
 
         new(name, states)
     end
 end
 
-OrdinalDimension{T}(name::Symbol, states::AbstractArray{T, 1}) =
+OrdinalDimension{T}(name::Symbol, states::AbstractVector{T}) =
     OrdinalDimension{T}(name, states)
 
 """
-Uses a Base.StepRange to enumerate possible states.
+    OrdinalStepDimension(name::Symbol, states::StepRange{T, S})
+    OrdinalStepDimension(name::Symbol, start::T, [step::S=1,] stop::T)
 
-Starts at variable `start`, steps by `step`, ends at `stop` (or less,
-if the math does't work out
+Uses a Base.StepRange to enumerate possible states.
 """
-immutable OrdinalStepDimension{T, S} <: OrdinalRangeDimension{T}
+immutable StepDimension{T, S} <: AbstractRangeDimension{T}
     name::Symbol
     states::StepRange{T, S}
 
-    function OrdinalStepDimension(name::Symbol, start::T, step::S, stop::T)
-        states = start:step:stop
-
-        if length(states) < 2
-            singleton_dimension_error(length(states))
-        end
+    function StepDimension(name::Symbol, states::StepRange{T, S})
+        length(states) > 1 || singleton_dimension_error(length(states))
 
         new(name, states)
     end
 end
 
-OrdinalStepDimension{T,S}(name::Symbol, start::T, step::S, stop::T) =
-    OrdinalStepDimension{T,S}(name, start, step, stop)
+StepDimension{T,S}(name::Symbol, states::StepRange{T, S}) =
+    StepDimension{T,S}(name, states)
 
-OrdinalStepDimension{T}(name::Symbol, start::T, stop::T) =
-    OrdinalStepDimension{T,Int}(name, start, 1, stop)
+StepDimension{T,S}(name::Symbol, start::T, step::S, stop::T) =
+    StepDimension{T,S}(name, start:step:stop)
+
+StepDimension{T}(name::Symbol, start::T, stop::T) =
+    StepDimension{T,Int}(name, start:1:stop)
 
 """
+    OrdinalUnitDimension(name::Symbol, states:UnitRange{T})
+    OrdinalUnitDimension(name::Symbol, start::T, stop::T)
+
 Similar to a UnitRange, enumerates values over start:stop
 """
-immutable OrdinalUnitDimension{T} <: OrdinalRangeDimension{T}
+immutable UnitDimension{T<:Real} <: AbstractRangeDimension{T}
     name::Symbol
     states::UnitRange{T}
 
-    function OrdinalUnitDimension(name::Symbol, start::T, stop::T)
-        states = start:stop
-
-        if length(states) < 2
-            singleton_dimension_error(length(states))
-        end
+    function UnitDimension(name::Symbol, states::UnitRange{T})
+        length(states) > 1 || singleton_dimension_error(length(states))
 
         new(name, states)
     end
 end
 
-OrdinalUnitDimension{T}(name::Symbol, start::T, stop::T) =
-    OrdinalUnitDimension{T}(name, start, stop)
+UnitDimension{T<:Real}(name::Symbol, states::UnitRange{T}) =
+    UnitDimension{T}(name, states)
+
+UnitDimension{T<:Real}(name::Symbol, start::T, stop::T) =
+    UnitDimension{T}(name, start:stop)
 
 """
-An integer dimension that starts at 1
+    CartesianDimension(name::Symbol, states::Base.OneTo)
+    CartesianDimension(name::Symbol, length)
 
-This is were the real magic happens, since all the optimizations will focus
-on this one. If I optimize anything at all.
+An integer dimension that starts at 1.
 """
-immutable CartesianDimension{T<:Integer} <: OrdinalRangeDimension{T}
+immutable CartesianDimension{T<:Integer} <: AbstractRangeDimension{T}
     name::Symbol
-    states::Base.OneTo{T}
+    states::OneTo{T}
 
-    CartesianDimension(name::Symbol, length::T) = length < convert(T, 2) ?
-        singleton_dimension_error(length) : new(name, Base.OneTo(length))
+    function CartesianDimension(name::Symbol, states::OneTo{T})
+        length(states) > 1 || singleton_dimension_error(length(states))
+
+        new(name, states)
+    end
 end
 
+CartesianDimension{T<:Integer}(name::Symbol, states::OneTo{T}) =
+    CartesianDimension{T}(name, states)
+
 CartesianDimension{T<:Integer}(name::Symbol, length::T) =
-    CartesianDimension{T}(name, length)
+    CartesianDimension{T}(name, OneTo(length))
 
 ###############################################################################
 #                   Functions
 
-Base.length(d::Dimension) = length(d.states)
-Base.values(d::Dimension) = d.states
 name(d::Dimension) = d.name
 
-"""
-Get the first state in this dimension
-"""
-function Base.first(d::Dimension)
-    return first(d.states)
-end
+Base.length(d::Dimension) = length(d.states)
 
-"""
-Get the last state in this dimension
-"""
-function Base.last(d::Dimension)
-    return last(d.states)
-end
+Base.size(d::Dimension) = size(d.states)
 
-"""
-Return the data type of the dimension
-"""
-function Base.eltype{T}(::Dimension{T})
-    return T
-end
+Base.step(d::AbstractRangeDimension) = step(d.states)
+
+Base.first(d::Dimension) = first(d.states)
+
+Base.last(d::Dimension) = last(d.states)
+
+minimum(d::Dimension) = minimum(d.states)
+
+maximum(d::Dimension) = maximum(d.states)
+
+Base.values(d::Dimension) = d.states
+
+Base.eltype{T}(::Dimension{T}) = T
 
 ###############################################################################
 #                   Indexing
 
 # custom indexin for integer (and float?) ranges
-function Base.indexin{T<:Integer}(xs::Vector{T}, d::OrdinalRangeDimension{T})
+function indexin{T<:Integer}(xs::Vector{T}, d::AbstractRangeDimension{T})
     inds = zeros(Int, size(xs))
 
     for (i, x) in enumerate(xs)
-        if first(d.states) <= x <= last(d.states)
-            (ind, rem) = divrem(x - first(d.states), step(d.states))
+        if first(d) <= x <= last(d)
+            (ind, rem) = divrem(x - first(d), step(d))
             if rem == 0
                 inds[i] = ind + 1
             end
@@ -164,107 +160,78 @@ function Base.indexin{T<:Integer}(xs::Vector{T}, d::OrdinalRangeDimension{T})
     return inds
 end
 
-function Base.indexin{T}(x::T, d::Dimension{T})
-    return first(indexin([x], d.states))
-end
+indexin{T}(x::T, d::Dimension{T}) = first(indexin([x], d.states))
 
-function Base.indexin{T}(xs::Vector{T}, d::Dimension{T})
-    return indexin(xs, d.states)
-end
+indexin{T}(xs::Vector{T}, d::Dimension{T}) = indexin(xs, d.states)
 
-function Base.indexin{T}(r::Range{T}, d::Dimension{T})
-    return indexin(collect(r), d.states)
-end
+indexin{T}(r::Range{T}, d::Dimension{T}) = indexin(collect(r), d.states)
 
-function Base.indexin{T}(::Colon, d::Dimension{T})
-    return collect(1:length(d))
-end
+indexin{T}(::Colon, d::Dimension{T}) = collect(1:length(d))
 
 ###############################################################################
-#                   Comparisons and Equality 
+#                   Comparisons and Equality
 
-# ensure that cardinal and ordinal dimensions will always be unequal
+# cardinal and ordinal dimensions are always unequal
 ==(::CardinalDimension, ::AbstractOrdinalDimension) = false
 
 ==(d1::CardinalDimension, d2::CardinalDimension) =
-    (d1.name == d2.name) &&
+    (name(d1) == name(d2)) &&
     (length(d1.states) == length(d2.states)) &&
-    all(d1.states .== d2.states)
+    all(values(d1) .== values(d2))
 
 ==(d1::AbstractOrdinalDimension, d2::AbstractOrdinalDimension) =
     (d1.name == d2.name) &&
     (length(d1.states) == length(d2.states)) &&
-    all(d1.states .== d2.states)
+    all(values(d1) .== values(d2))
 
-function .==(d::Dimension, x)
-    # states should all be unique
-    return d.states .== convert(eltype(d), x)
-end
+# states should all be unique
+.==(d::Dimension, x) = d.states .== convert(eltype(d), x)
 
 .!=(d::Dimension, x) = !(d .== x)
 
-# can't be defined in terms of each b/c of
-#  non-trivial case of x ∉ d
-function .<(d::AbstractOrdinalDimension, x)
-    ind = d .==  x
-    loc = findfirst(ind)
+in(x, d::Dimension) = any(d .== x)
 
-    # if x is in the array
-    if loc != 0
-        ind[1:loc] = true
-        ind[loc] = false
-    else
-        ind[:] = false
-    end
+##                  specific to Ordinal dimensions
 
-    return ind
-end
+findfirst(d::AbstractOrdinalDimension, x) =
+    findfirst(d.states, convert(eltype(d), x))
 
-function .>(d::AbstractOrdinalDimension, x)
-    ind = d .== x
-    loc = findfirst(ind)
+# can't be defined in terms of each b/c of non-trivial case of x ∉ d
+@inline function .<(d::AbstractOrdinalDimension, x)
+    ind = falses(length(d))
+    loc = findfirst(d, x)
 
-    # if x is in the array
-    if loc != 0
-        ind[loc:end] = true
-        ind[loc] = false
-    else
-        ind[:] = false
-    end
+    # indexing works 1:-1 and 1:0 too ...
+    ind[1:(loc - 1)] = true
 
     return ind
 end
 
-function .<=(d::AbstractOrdinalDimension, x)
-    ind = d .== x
-    loc = findfirst(ind)
+@inline function .>(d::AbstractOrdinalDimension, x)
+    ind = falses(length(d))
+    loc = findfirst(d, x)
+
+    # if x ∉ d, then prevent 1:end being all true
+    (loc != 0) && (ind[(loc + 1):end] = true)
+
+    return ind
+end
+
+@inline function .<=(d::AbstractOrdinalDimension, x)
+    ind = falses(length(d))
+    loc = findfirst(d, x)
+
     ind[1:loc] = true
 
     return ind
 end
 
-function .>=(d::AbstractOrdinalDimension, x)
-    ind = d .== x
-    loc = findfirst(ind)
-    ind[loc:end] = true
+@inline function .>=(d::AbstractOrdinalDimension, x)
+    ind = falses(length(d))
+    loc = findfirst(d, x)
+
+    (loc != 0) && (ind[loc:end] = true)
 
     return ind
 end
-
-function in(x, d::Dimension)
-    return any(d.states .== convert(eltype(d), x))
-end
-
-###############################################################################
-#                   IO Stuff
-
-Base.mimewritable(::MIME"text/html", d::Dimension) = true
-
-Base.show(io::IO, d::Dimension) =
-    print(io, "$(d.name): $(repr(d.states)) ($(length(d)))")
-Base.show(io::IO, a::MIME"text/html", d::Dimension) = show(io, d)
-
-Base.show(io::IO, d::CartesianDimension) =
-    print(io, "$(d.name): 1:$(last(d))")
-Base.show(io::IO, a::MIME"text/html", d::CartesianDimension) = show(io, d)
 

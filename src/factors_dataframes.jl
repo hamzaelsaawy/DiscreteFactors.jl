@@ -1,17 +1,12 @@
 #
-# Factors-DataFrames
+# Factor-DataFrame conversion
 #
-# Bridge between the two
 
-"""
-Convert a Factor to a DataFrame
-"""
-function DataFrames.DataFrame(ft::Factor)
-    df = DataFrames.DataFrame(pattern_states(ft))
-    DataFrames.rename!(df, names(df), names(ft))
-    df[:v] = ft.v[:]
+function Base.convert(::Type{DataFrame}, ϕ::Factor)
+    df = DataFrames.DataFrame(pattern(ϕ))
+    DataFrames.rename!(df, names(df), names(ϕ))
+    df[:potential] = ϕ.potential[:]
 
     return df
 end
-
 
