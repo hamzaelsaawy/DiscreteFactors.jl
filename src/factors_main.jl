@@ -11,49 +11,45 @@ Create a Factor corresponding to the potential.
 type Factor{D<:Dimension}
     dimensions::Vector{D}
     # the value mapped to each instance
-    v::Array{Float64}
+    potential::Array{Float64}
 
-    function Factor(dimensions::Vector{D}, v::Array)
-        (length(dimensions) != ndims(v)) &&
-            throw(ArgumentError("v must have as many dimensions as dimensions"))
+    function Factor(dimensions::Vector{D}, potential::Array)
+        (length(dimensions) != ndims(potential)) &&
+            throw(ArgumentError("potential must have as many dimensions as dimensions"))
 
-        ([size(v)...] != [length(d) for d in dimensions]) &&
+        ([size(potential)...] != [length(d) for d in dimensions]) &&
             throw(ArgumentError("Number of states must match values size"))
 
         allunique(map(name, dimensions)) || non_unique_dims_error()
-        end
 
-        if :potential in map(name, dimensions)
+        (:potential in map(name, dimensions)) &&
             warn("having a dimension called `potential` will cause problems")
-        end
 
-        return new(dimensions, v)
+        return new(dimensions, potential)
     end
 end
 
-Factor(eltype=Float64) =
-    Factor{Dimension, eltype}(Dimension[], squeeze(zeros(eltype, 1), 1))
+# Factor(lengths::Vector{Int})
 
-Factor{D<:Dimension, V}(dimensions::Vector{D}, v::Array{V}) =
-    Factor{D, V}(dimensions, v)
+Factor{D<:Dimension, V<:Real}(dimensions::Vector{D}, potential::Array{V}) =
+    Factor{D}(dimensions, flaot(potential))
 
-Factor{V}(dimension::Dimension, v::Vector{V}) =
+Factor{V}(dimension::Dimension, potential::Vector{V}) =
     Factor{typeof(dimension), V}([dimension], v)
 
 function Factor{D<:Dimension}(dimensions::Vector{D}, eltype=Float64)
-    v = zeros(eltype, [length(d) for d in dimensions]...)
-    Factor{D, eltype}(dimensions, v)
+    potential = zeros(eltype, [length(d) for d in dimensions]...)
+    Factor{D, eltype}(dimensions, potential)
 end
 
 function Factor(d::Dimension, eltype=Float64)
-    v = zeros(eltype, length(d))
-    Factor{typeof(d), eltype}([d], v)
+    potential = zeros(eltype, length(d))
+    Factor{typeof(d), eltype}([d], potential)
 end
 
 """
-Initialize with a dictionary mapping dimension names (symbols) to their lenghts
-
-V will be a zero matrix with type eltype
+Initialize with a dictionary mapping dimension names (symbols) to lengths,
+ranges, or arrays
 """
 function Factor{T<:Integer}(d::Dict{Symbol, T}, eltype)
     dimensions = [CartesianDimension(x...) for x in d]
@@ -61,9 +57,9 @@ function Factor{T<:Integer}(d::Dict{Symbol, T}, eltype)
 end
 
 """
-Initialize with dimension names, a list of thier lengths, and type of v
+Initialize with dimension names, a list of thier lengths, and type of potential
 
-V will be a zero matrix with type eltype
+potential will be a zero matrix with type eltype
 """
 function Factor{T<:Integer}(dims::Vector{Symbol}, lens::Vector{T}, eltype=Float64)
     if length(dims) != length(dims)
@@ -77,34 +73,34 @@ end
 """
 Initialize with a vector of dimension names and a value array
 """
-function Factor{V}(dims::Vector{Symbol}, v::Array{V})
-    if length(dims) != ndims(v)
+function Factor{V}(dims::Vector{Symbol}, potential::Array{V})
+    if length(dims) != ndims(potential)
         throw(ArgumentError("Number of dimensions and dimensions " *
                     "of v do not match"))
     end
 
-    dimensions = [CartesianDimension(x...) for x in zip(dims, size(v))]
-    Factor(dimensions, v)
+    dimensions = [CartesianDimension(x...) for x in zip(dims, size(potential))]
+    Factor(dimensions, potential)
 end
 
 ###############################################################################
 #                   Methods
 
 """
-Returns tuple of the type of Dimensions and the value mapping, v
+Returns tuple of the type of Dimensions and the value mapping, potential
 """
-Base.eltype(ft::Factor) = (eltype(ft.dimensions), eltype(ft.v))
+Base.eltype(ft::Factor) = (eltype(ft.dimensions), eltype(ft.potential))
 """
 Names of each dimension
 """
 Base.names(ft::Factor) = map(name, ft.dimensions)
 
-Base.ndims(ft::Factor) = ndims(ft.v)
+Base.ndims(ft::Factor) = ndims(ft.potential)
 
 """
 Returns the number of states in each dimension as a tuple
 """
-Base.size(ft::Factor) = size(ft.v)
+Base.size(ft::Factor) = size(ft.potential)
 
 """
 Same as size, but as a vector instead of a tuple
@@ -112,9 +108,9 @@ Same as size, but as a vector instead of a tuple
 lengths(ft::Factor) = [size(ft)...]
 
 """
-Total number of elements in the value mapping, v
+Total number of elements in the value mapping, potential
 """
-Base.length(ft::Factor) = length(ft.v)
+Base.length(ft::Factor) = length(ft.potential)
 Base.length(ft::Factor, dim::Symbol) = length(getdim(ft, dim))
 Base.length(ft::Factor, dims::Vector{Symbol}) =
     [length(ft, dim) for dim in dims]
@@ -222,15 +218,15 @@ function Base.push!(ft::Factor, dim::Dimension)
         error("Dimension $(name(dim)) already exists")
     end
 
-    v = repeat(ft.v, outer=vcat(repeat([1], outer=ndims(ft.v)), length(dim)))
+    potential = repeat(ft.potential, outer=vcat(repeat([1], outer=ndims(ft.potential)), length(dim)))
     ft.dimensions = push!(Vector{Dimension}(ft.dimensions), dim)
-    ft.v = v
+    ft.potential = potential
 
     return ft
 end
 
 function Base.permutedims!(ft::Factor, perm)
-    ft.v = permutedims(ft.v, perm)
+    ft.potential = permutedims(ft.potential, perm)
     ft.dimensions = ft.dimensions[perm]
     return ft
 end

@@ -22,15 +22,14 @@ import Base.LinAlg: normalize, normalize
 import DataFrames
 
 export
-    CardinalDimension,
-    OrdinalDimension,
+    ListDimension,
     StepDimension,
     UnitDimension,
     CartesianDimension,
 
     name,
     eltype,
-    infer_dimension,
+    dimension,
 
     Assignment,
 
