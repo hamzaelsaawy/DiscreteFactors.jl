@@ -220,7 +220,8 @@ dimension(name::Symbol, states::StepRange) =
     StepDimension(name, states)
 dimension(name::Symbol, states::UnitRange) =
     first(states) == 1 ?
-    CartesianDimension(states) : UnitDimension(name, states)
+        CartesianDimension(name, length(states)) :
+        UnitDimension(name, states)
 dimension(name::Symbol, states::Base.OneTo) =
     CartesianDimension(name, states)
 dimension(name::Symbol, length::Int) =

@@ -35,18 +35,19 @@ export
 
     Factor,
     lengths,
+    getdim,
     pattern,
-    pattern_states,
+    pattern_states
 #=    getdim,
     reducedim!
 =#
 include("errors.jl")
-include("auxilary.jl")
 include("dimensions.jl")
 include("factors_main.jl")
 #include("factors_access.jl")
 #include("factors_dims.jl")
-#include("factors_dataframes.jl")
+include("dataframes.jl")
+include("auxiliary.jl")
 include("io.jl")
 
 end # module

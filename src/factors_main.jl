@@ -1,7 +1,7 @@
 #
-# Factors Code
+# Factors type and constructors
 #
-# Main file for Factors
+# Main code and basic functions for Factors
 
 """
     Factor(dims, potential)
@@ -14,13 +14,12 @@ type Factor{D<:Dimension}
     potential::Array{Float64}
 
     function Factor(dimensions::Vector{D}, potential::Array)
-        (length(dimensions) != ndims(potential)) &&
-            throw(ArgumentError("potential must have as many dimensions as dimensions"))
+        _check_dims_unique(dimensions)
 
-        ([size(potential)...] != [length(d) for d in dimensions]) &&
-            throw(ArgumentError("Number of states must match values size"))
+        (length(dimensions) == ndims(potential)) || not_enough_dims_error()
 
-        allunique(map(name, dimensions)) || non_unique_dims_error()
+        ([size(potential)...] == [length(d) for d in dimensions]) ||
+                invalid_dim_sizes()
 
         (:potential in map(name, dimensions)) &&
             warn("having a dimension called `potential` will cause problems")
@@ -29,222 +28,185 @@ type Factor{D<:Dimension}
     end
 end
 
-# Factor(lengths::Vector{Int})
+# convert from ints and other reals to floats
+Factor{D<:Dimension, V<:Real}(dims::Vector{D}, potential::Array{V}) =
+    Factor{D}(dims, float(potential))
 
-Factor{D<:Dimension, V<:Real}(dimensions::Vector{D}, potential::Array{V}) =
-    Factor{D}(dimensions, flaot(potential))
+# when it actually is floats, avoid (potential) overhead of float() call
+Factor{D<:Dimension}(dims::Vector{D}, potential::Array{Float64}) =
+    Factor{D}(dims, potential)
 
-Factor{V}(dimension::Dimension, potential::Vector{V}) =
-    Factor{typeof(dimension), V}([dimension], v)
+Factor{V<:Real}(dimension::Dimension, potential::Vector{V}) =
+    Factor([dim], potential)
 
-function Factor{D<:Dimension}(dimensions::Vector{D}, eltype=Float64)
-    potential = zeros(eltype, [length(d) for d in dimensions]...)
-    Factor{D, eltype}(dimensions, potential)
+# just dimensions, create zero potential
+Factor(dim::Dimension) = Factor([dim])
+function Factor{D<:Dimension}(dims::Vector{D})
+    potential = zeros(Float64, [length(d) for d in dims]...)
+
+    return Factor(dims, potential)
 end
 
-function Factor(d::Dimension, eltype=Float64)
-    potential = zeros(eltype, length(d))
-    Factor{typeof(d), eltype}([d], potential)
-end
+# symbol names and potential
+Factor{V<:Real}(dim::Symbol, potential::Vector{V}) =
+    Factor([dim], potential)
 
-"""
-Initialize with a dictionary mapping dimension names (symbols) to lengths,
-ranges, or arrays
-"""
-function Factor{T<:Integer}(d::Dict{Symbol, T}, eltype)
-    dimensions = [CartesianDimension(x...) for x in d]
-    Factor(dimensions, eltype)
-end
+function Factor{V<:Real}(dims::Vector{Symbol}, potential::Array{V})
+    (length(dims) == ndims(potential)) || not_enough_dims_error()
+    new_dims = map(CartesianDimension, dims, size(potential))
 
-"""
-Initialize with dimension names, a list of thier lengths, and type of potential
-
-potential will be a zero matrix with type eltype
-"""
-function Factor{T<:Integer}(dims::Vector{Symbol}, lens::Vector{T}, eltype=Float64)
-    if length(dims) != length(dims)
-        throw(ArgumentError("Number of dimensions and lengths do not match"))
-    end
-
-    dimensions = [CartesianDimension(x...) for x in zip(dims, lens)]
-    Factor(dimensions, eltype)
+    return Factor(new_dims, potential)
 end
 
 """
-Initialize with a vector of dimension names and a value array
-"""
-function Factor{V}(dims::Vector{Symbol}, potential::Array{V})
-    if length(dims) != ndims(potential)
-        throw(ArgumentError("Number of dimensions and dimensions " *
-                    "of v do not match"))
-    end
+    Factor(dims::Dict{Symbol, Any})
+    Factor(dims::Pair{Symbol, Any}...)
 
-    dimensions = [CartesianDimension(x...) for x in zip(dims, size(potential))]
-    Factor(dimensions, potential)
+Create factor from mappings from dimension names (symbols) to lengths,
+ranges, or arrays.
+
+Use dimension(::Symbol, ::Any) to create a Dimension from each pair.
+"""
+function Factor(dims::Dict{Symbol, Any})
+    new_dims = [CartesianDimension(name, state) for (name, state) in dims]
+    Factor(new_dims)
 end
+
+Factor(dims::Pair{Symbol, Any}...) = Factor(Dict(dims))
 
 ###############################################################################
 #                   Methods
 
-"""
-Returns tuple of the type of Dimensions and the value mapping, potential
-"""
-Base.eltype(ft::Factor) = (eltype(ft.dimensions), eltype(ft.potential))
-"""
-Names of each dimension
-"""
-Base.names(ft::Factor) = map(name, ft.dimensions)
-
-Base.ndims(ft::Factor) = ndims(ft.potential)
+Base.eltype(::Factor) = Float64
 
 """
-Returns the number of states in each dimension as a tuple
+    names(φ::Factor)
+
+Get an array of the names of each dimension in `φ`.
 """
-Base.size(ft::Factor) = size(ft.potential)
+Base.names(φ::Factor) = map(name, φ.dimensions)
+
+Base.ndims(φ::Factor) = ndims(φ.potential)
 
 """
-Same as size, but as a vector instead of a tuple
+    size(φ, [dims...])
+
+Return a tuple of the dimensions of `φ`.
 """
-lengths(ft::Factor) = [size(ft)...]
+Base.size(φ::Factor) = size(φ.potential)
+Base.size(φ::Factor, dim::Symbol) = size(φ.potential, indexin(dim, φ))
+Base.size{N}(φ::Factor, dims::Vararg{Symbol, N}) =
+    ntuple(k -> size(φ, dims[k]), Val{N})
+
+Base.length(φ::Factor) = length(φ.potential)
+Base.length(φ::Factor, dim::Symbol) = length(getdim(φ, dim))
+Base.length(φ::Factor, dims::Vector{Symbol}) = [length(φ, dim) for dim in dims]
 
 """
-Total number of elements in the value mapping, potential
+    indexin(dims, φ::Factor)
+
+Find index of dimension `dims` in `φ`. Return 0 if not in `φ`.
 """
-Base.length(ft::Factor) = length(ft.potential)
-Base.length(ft::Factor, dim::Symbol) = length(getdim(ft, dim))
-Base.length(ft::Factor, dims::Vector{Symbol}) =
-    [length(ft, dim) for dim in dims]
+Base.indexin(dim::Symbol, φ::Factor) = findnext(names(φ), dim, 1)
+Base.indexin(dims::Vector{Symbol}, φ::Factor) = indexin(dims, names(φ))
 
 """
-Returns the index of dimension `dims` in `ft`. Returns 0 if not in `ft`.
+    getdim(φ::Factor, dim::Symbol)
+    getdim(φ::Factor, dims::Vector{Symbol})
+
+Get the dimension with name `dim` in `φ`.
 """
-function Base.indexin(dims, ft::Factor)
-    if isa(dims, Vector{Symbol})
-        return indexin(dims, names(ft))
-    elseif isa(dims, Vector{Dimension})
-        return indexin(dims, ft.dimensions)
-    else
-        throw(ArgumentError("Unsupported argument type: $typeof(dims)"))
-    end
+@inline function getdim(φ::Factor, dim::Symbol)
+    i = indexin(dim, φ)
+
+    (i == 0) && not_in_factor_error(dim)
+
+    return φ.dimensions[i]
 end
 
-function getdim(ft::Factor, dim::Symbol)
-    i = indexin([dim], ft)[1]
+@inline function getdim(φ::Factor, dims::Vector{Symbol})
+    _check_dims_valid(dims, φ)
 
-    if i == 0
-        not_in_factor_error(dim)
-    end
-
-    return ft.dimensions[i]
-end
-
-function getdim(ft::Factor, dims::Vector{Symbol})
-    inds = indexin(dims, ft)
-
-    zero_loc = findfirst(inds, 0)
-    if zero_loc != 0
-        not_in_factor_error(dims[zero_loc])
-    end
-
-    return ft.dimensions[inds]
+    inds = indexin(dims, φ)
+    return φ.dimensions[inds]
 end
 
 """
-Returns the pattern of `dim` without the states
+    pattern(φ::Factor, dim)
+
+Return the index of the states of `dim`, given its current position in φ.
 """
-function pattern(ft::Factor, dim::Symbol)
-    ind = indexin([dim], ft)[1]
+function pattern(φ::Factor, dim::Symbol)
+    ind = indexin(dim, φ)
+    lens = size(φ)
 
-    if ind == 0
-        not_in_factor_error(dim)
-    end
-
-    lens = lengths(ft)
-
+    (ind == 0) && not_in_factor_error(dim)
 
     inner = prod(lens[1:(ind-1)])
-    outer = Int(length(ft) / inner / lens[ind])
+    outer = Int(length(φ) / inner / lens[ind])
 
-    repeat(Vector(1:length(ft.dimensions[ind])), inner=inner, outer=outer)
+    repeat(Vector(1:length(φ.dimensions[ind])), inner=inner, outer=outer)
 end
 
-function pattern(ft::Factor, dims::Vector{Symbol})
-    inds = indexin([dims], ft)
+function pattern(φ::Factor, dims::Vector{Symbol})
+    _check_dims_valid(dims, φ)
 
-    zero_loc = findfirst(inds, 0)
-    if zero_loc != 0
-        not_in_factor_error(dims[zero_loc])
-    end
-
-    lens = lengths(ft)
-
+    inds = indexin(dims, φ)
+    lens = size(φ)
 
     inners = vcat(1, cumprod(lens[1:(end-1)]))
-    outers = Vector{Int}(length(ft) ./ lens[inds] ./ inners[inds])
+    outers = Vector{Int}(length(φ) ./ lens[inds] ./ inners[inds])
 
     hcat([repeat(Vector(1:length(d)), inner=i, outer=o) for (d, i, o) in
-            zip(ft.dimensions[inds], inners[inds], outers)]...)
+            zip(φ.dimensions[inds], inners[inds], outers)]...)
 end
 
-function pattern(ft::Factor)
-    lens = lengths(ft)
+function pattern(φ::Factor)
+    lens = lengths(φ)
 
     inners = vcat(1, cumprod(lens[1:(end-1)]))
-    outers = Vector{Int}(length(ft) ./ lens ./ inners)
+    outers = Vector{Int}(length(φ) ./ lens ./ inners)
 
     hcat([repeat(Vector(1:length(d)), inner=i, outer=o) for (d, i, o) in
-            zip(ft.dimensions, inners, outers)]...)
+            zip(φ.dimensions, inners, outers)]...)
 end
 
 """
-Gets the order of states of a dimension
-"""
-pattern_states(ft::Factor, dim::Symbol) =
-    getdim(ft, dim).states[pattern(ft, dims)]
+    pattern_states(φ::Factor, dim)
 
-function pattern_states(ft::Factor, dims::Vector{Symbol})
-    dims = getdim(ft, dims)
-    return hcat([d.states[pattern(ft, d.name)] for d in dims]...)
+Returns the states of `dim`, given its current position in φ.
+"""
+pattern_states(φ::Factor, dim::Symbol) =
+    getdim(φ, dim).states[pattern(φ, dims)]
+
+function pattern_states(φ::Factor, dims::Vector{Symbol})
+    dims = getdim(φ, dims)
+    return hcat([d.states[pattern(φ, d.name)] for d in dims]...)
 end
 
-pattern_states(ft::Factor) =
-    hcat([d.states[pattern(ft, d.name)] for d in ft.dimensions]...)
+pattern_states(φ::Factor) =
+    hcat([d.states[pattern(φ, d.name)] for d in φ.dimensions]...)
 
 """
 Appends a new dimension to a Factor
 """
-function Base.push!(ft::Factor, dim::Dimension)
-    if name(dim) in names(ft)
+function Base.push!(φ::Factor, dim::Dimension)
+    if name(dim) in names(φ)
         error("Dimension $(name(dim)) already exists")
     end
 
-    potential = repeat(ft.potential, outer=vcat(repeat([1], outer=ndims(ft.potential)), length(dim)))
-    ft.dimensions = push!(Vector{Dimension}(ft.dimensions), dim)
-    ft.potential = potential
+    φ.dimensions = push!(Vector{Dimension}(φ.dimensions), dim)
+    φ.potential = duplicate(φ.potential, length(dim))
 
-    return ft
+    return φ
 end
 
-function Base.permutedims!(ft::Factor, perm)
-    ft.potential = permutedims(ft.potential, perm)
-    ft.dimensions = ft.dimensions[perm]
-    return ft
+function Base.permutedims!(φ::Factor, perm)
+    φ.potential = permutedims(φ.potential, perm)
+    φ.dimensions = φ.dimensions[perm]
+
+    return φ
 end
 
-Base.permutedims(ft::Factor, perm) = permutedims!(deepcopy(ft), perm)
-
-###############################################################################
-#                   IO Stuff
-
-Base.mimewritable(::MIME"text/html", ft::Factor) = true
-
-function Base.show(io::IO, ft::Factor)
-    print(io, "$(length(ft)) possible instantiations. $(eltype(ft))")
-    for d in ft.dimensions
-        println(io, "")
-        print(io, "\t")
-        print(io, d)
-    end
-end
-Base.show(io::IO, a::MIME"text/html", ft::Factor) = show(io, ft)
+Base.permutedims(φ::Factor, perm) = permutedims!(deepcopy(φ), perm)
 

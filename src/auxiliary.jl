@@ -5,8 +5,15 @@
 
 typealias Assignment{T<:Any} Dict{Symbol, T}
 
-# make sure all dims are valid (in the Factor)
-@inline function _check_dims_valid(dims::NodeNames, ϕ::Factor)
+# dims are unique
+_check_dims_unique(dims::Vector{Dimension}) =
+    _check_dims_unique(map(name, dims))
+
+_check_dims_unique(dims::Vector{Symbol}) =
+    allunique(dims) || non_unique_dims_error()
+
+# make sure all dims are valid (in φ)
+@inline function _check_dims_valid(dims::Vector{Symbol}, ϕ::Factor)
     isempty(dims) && return
 
     dim = first(dims)
@@ -14,9 +21,6 @@ typealias Assignment{T<:Any} Dict{Symbol, T}
 
     return _check_dims_valid(dims[2:end], ϕ)
 end
-
-# dims are unique
-_check_dims_unique(dims::NodeNames) = allunique(dims) || non_unique_dims_error()
 
 """
     duplicate(A, dims)
