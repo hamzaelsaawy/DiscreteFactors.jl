@@ -29,20 +29,22 @@ export
     CartesianDimension,
 
     name,
-    eltype
-#=
+    eltype,
+    infer_dimension,
+
     Assignment,
 
     Factor,
     lengths,
     pattern,
     pattern_states,
-    getdim,
+#=    getdim,
     reducedim!
 =#
 include("errors.jl")
+include("auxilary.jl")
 include("dimensions.jl")
-#include("factors_code.jl")
+include("factors_main.jl")
 #include("factors_access.jl")
 #include("factors_dims.jl")
 #include("factors_dataframes.jl")

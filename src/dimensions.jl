@@ -3,14 +3,14 @@
 #
 # Main file for Dimension datatype
 
-abstract Dimension{T}
+abstract AbstractDimension{T}
 
 """
     CardinalDimension(name, states)
 
 A dimension whose states emnumerated in an array. Order does not matter
 """
-immutable CardinalDimension{T} <: Dimension{T}
+immutable CardinalDimension{T} <: AbstractDimension{T}
     name::Symbol
     states::AbstractVector{T}
 
@@ -26,7 +26,7 @@ CardinalDimension{T}(name::Symbol, states::AbstractVector{T}) =
    CardinalDimension{T}(name, states)
 
 # where order matters
-abstract AbstractOrdinalDimension{T} <: Dimension{T}
+abstract AbstractOrdinalDimension{T} <: AbstractDimension{T}
 # stored as a range
 abstract AbstractRangeDimension{T} <: AbstractOrdinalDimension{T}
 
@@ -234,4 +234,21 @@ end
 
     return ind
 end
+
+###############################################################################
+#                   Infer Dimension
+"""
+    infer_dimension{T<:AbstractArray}(name::Symbol, states::T)
+
+Pick the best type of Ordinal Array based on the type of states.
+"""
+infer_dimension(name::Symbol, states::AbstractVector) =
+    OrdinalDimension(name, states)
+infer_dimension(name::Symbol, states::StepRange) =
+    StepDimension(name, states)
+infer_dimension(name::Symbol, states::UnitRange) =
+    first(states) == 1 ?
+    CartesianDimension(states) : UnitDimension(name, states)
+infer_dimension(name::Symbol, states::Base.OneTo) =
+    CartesianDimension(name, states)
 

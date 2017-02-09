@@ -3,6 +3,8 @@
 #
 # Not exactly related, but not exactly not
 
+typealias Assignment{T<:Any} Dict{Symbol, T}
+
 # make sure all dims are valid (in the Factor)
 @inline function _check_dims_valid(dims::NodeNames, ϕ::Factor)
     isempty(dims) && return

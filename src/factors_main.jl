@@ -3,28 +3,28 @@
 #
 # Main file for Factors
 
-typealias Assignment{T<:Any} Dict{Symbol, T}
+"""
+    Factor(dims, potential)
 
-type Factor{D<:Dimension, V}
+Create a Factor corresponding to the potential.
+"""
+type Factor{D<:Dimension}
     dimensions::Vector{D}
     # the value mapped to each instance
-    v::Array{V}
+    v::Array{Float64}
 
-    function Factor(dimensions::Vector{D}, v::Array{V})
-        if length(dimensions) != ndims(v)
+    function Factor(dimensions::Vector{D}, v::Array)
+        (length(dimensions) != ndims(v)) &&
             throw(ArgumentError("v must have as many dimensions as dimensions"))
-        end
 
-        if [size(v)...] != [length(d) for d in dimensions]
+        ([size(v)...] != [length(d) for d in dimensions]) &&
             throw(ArgumentError("Number of states must match values size"))
+
+        allunique(map(name, dimensions)) || non_unique_dims_error()
         end
 
-        if !allunique(map(name, dimensions))
-            non_unique_dims_error()
-        end
-
-        if :v in map(name, dimensions)
-            warn("having a dimension called `v` will cause problems")
+        if :potential in map(name, dimensions)
+            warn("having a dimension called `potential` will cause problems")
         end
 
         return new(dimensions, v)
