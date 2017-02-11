@@ -59,20 +59,20 @@ function Factor{V<:Real}(dims::Vector{Symbol}, potential::Array{V})
 end
 
 """
-    Factor(dims::Dict{Symbol, Any})
-    Factor(dims::Pair{Symbol, Any}...)
+    Factor(dims::Dict{Symbol})
+    Factor(dims::Pair{Symbol}...)
 
 Create factor from mappings from dimension names (symbols) to lengths,
 ranges, or arrays.
 
 Use dimension(::Symbol, ::Any) to create a Dimension from each pair.
 """
-function Factor(dims::Dict{Symbol, Any})
+function Factor(dims::Dict{Symbol})
     new_dims = [CartesianDimension(name, state) for (name, state) in dims]
     Factor(new_dims)
 end
 
-Factor(dims::Pair{Symbol, Any}...) = Factor(Dict(dims))
+Factor(dims::Pair{Symbol}...) = Factor(Dict(dims))
 
 ###############################################################################
 #                   Methods

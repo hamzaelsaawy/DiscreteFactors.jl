@@ -3,6 +3,20 @@
 #
 # Main file for Dimension datatype
 
+# abstract Dimension{T} <: AbstractVector{T}
+"""
+A `Dimension` ... does what?
+
+Should implements
+    `values`
+    `name`
+Values should be some implementation of AbstractArray:
+    `getindex`
+    Iteration
+    `first`
+    `last`
+    `eltype`
+"""
 abstract Dimension{T}
 
 # stored as a range
@@ -15,13 +29,13 @@ A dimension whose states emnumerated in an array.
 """
 immutable ListDimension{T} <: Dimension{T}
     name::Symbol
-    states::AbstractVector{T}
+    states::NTuple{T}
 
     function ListDimension(name::Symbol, states::AbstractVector{T})
         allunique(states) || non_unique_states_error()
         length(states) > 1 || singleton_dimension_error(length(states))
-
-        new(name, states)
+        states_t = (states...)
+        new(name, states_t)
     end
 end
 
@@ -105,50 +119,31 @@ CartesianDimension{T<:Integer}(name::Symbol, length::T) =
 
 name(d::Dimension) = d.name
 
-Base.length(d::Dimension) = length(d.states)
-
-Base.size(d::Dimension) = size(d.states)
-
-Base.step(d::RangeDimension) = step(d.states)
-
-Base.first(d::Dimension) = first(d.states)
-
-Base.last(d::Dimension) = last(d.states)
-
-minimum(d::Dimension) = minimum(d.states)
-
-maximum(d::Dimension) = maximum(d.states)
-
 Base.values(d::Dimension) = d.states
 
+Base.length(d::Dimension) = length(values(d))
+
+Base.size(d::Dimension) = size(values(d))
+
+Base.step(d::RangeDimension) = step(values(d))
+
+Base.first(d::Dimension) = first(values(d))
+
+Base.last(d::Dimension) = last(values(d))
+
+minimum(d::Dimension) = minimum(values(d))
+
+maximum(d::Dimension) = maximum(values(d))
+
+#                   Iterator Interface
+
+Base.start(dim::Dimension) = start(dim.states)
+
+Base.next(dim::Dimension, i) = next(dim.states, i)
+
+Base.done(dim::Dimension, i) = done(dim.states, i)
+
 Base.eltype{T}(::Dimension{T}) = T
-
-###############################################################################
-#                   Indexing
-
-# custom indexin for integer (and float?) ranges
-function indexin{T<:Integer}(xs::Vector{T}, d::RangeDimension{T})
-    inds = zeros(Int, size(xs))
-
-    for (i, x) in enumerate(xs)
-        if first(d) <= x <= last(d)
-            (ind, rem) = divrem(x - first(d), step(d))
-            if rem == 0
-                inds[i] = ind + 1
-            end
-        end
-    end
-
-    return inds
-end
-
-indexin{T}(x::T, d::Dimension{T}) = first(indexin([x], d.states))
-
-indexin{T}(xs::Vector{T}, d::Dimension{T}) = indexin(xs, d.states)
-
-indexin{T}(r::Range{T}, d::Dimension{T}) = indexin(collect(r), d.states)
-
-indexin{T}(::Colon, d::Dimension{T}) = collect(1:length(d))
 
 ###############################################################################
 #                   Comparisons and Equality
@@ -159,14 +154,14 @@ indexin{T}(::Colon, d::Dimension{T}) = collect(1:length(d))
     all(values(d1) .== values(d2))
 
 # states should all be unique
-.==(d::Dimension, x) = d.states .== convert(eltype(d), x)
+.==(d::Dimension, x) = values(d) .== convert(eltype(d), x)
 
 .!=(d::Dimension, x) = !(d .== x)
 
 in(x, d::Dimension) = any(d .== x)
 
 findfirst(d::Dimension, x) =
-    findfirst(d.states, convert(eltype(d), x))
+    findfirst(values(d), convert(eltype(d), x))
 
 # can't be defined in terms of each b/c of non-trivial case of x ∉ d
 @inline function .<(d::Dimension, x)
@@ -206,6 +201,51 @@ end
 
     return ind
 end
+
+###############################################################################
+#                   Indexing
+
+# custom indexin for integer (and float?) ranges
+function indexin{T<:Integer}(xs::Vector{T}, d::RangeDimension{T})
+    inds = zeros(Int, size(xs))
+
+    for (i, x) in enumerate(xs)
+        if first(d) <= x <= last(d)
+            (ind, rem) = divrem(x - first(d), step(d))
+            if rem == 0
+                inds[i] = ind + 1
+            end
+        end
+    end
+
+    return inds
+end
+
+indexin(x, d::Dimension) = first(indexin([x], values(d)))
+
+indexin(xs::AbstractArray, d::Dimension) = indexin(xs, values(d))
+
+"""
+    update(dim::Dimension, I)
+
+Return the cartesian index and an updated dimension from `I`
+
+`I` is either an array of states found in dim or a logical index.
+"""
+function update(dim::Dimension, I)
+    error("Not Implemented") # TODO
+end
+
+function update(dim::Dimension, I::BitVector)
+    error("Not Implemented") # TODO
+end
+
+#                   AbstractArray Interfact
+# the actual index in I
+# TODO getindex
+# TODO Base.linearindexing
+# TODO endof
+
 
 ###############################################################################
 #                   Infer Dimension

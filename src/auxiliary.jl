@@ -6,7 +6,7 @@
 typealias Assignment{T<:Any} Dict{Symbol, T}
 
 # dims are unique
-_check_dims_unique(dims::Vector{Dimension}) =
+_check_dims_unique{D<:Dimension}(dims::Vector{D}) =
     _check_dims_unique(map(name, dims))
 
 _check_dims_unique(dims::Vector{Symbol}) =

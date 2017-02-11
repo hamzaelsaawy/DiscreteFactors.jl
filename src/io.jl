@@ -3,16 +3,19 @@
 #
 # Printing and stuff
 
-function show(io::IO, d::Dimension)
-    print(io, name(d), ":")
-    print(io, "  ", values(d), " (", length(d), ")")
-end
+show(io::IO, d::Dimension) =
+    print(io, name(d), ":  ", values(d), " (", length(d), ")")
 
-function show(io::IO, d::RangeDimension)
-    print(io, name(d), ":")
-    print(io, "  ", first(d), ":", step(d), ":", last(d))
-    print(io, " (", length(d), ")")
-end
+show(io::IO, d::RangeDimension) =
+    print(io, name(d), ":  ", repr(first(d)), ":", repr(step(d)), ":",
+            repr(last(d)), " (", repr(length(d)), ")")
+
+show(io::IO, d::UnitDimension) =
+    print(io, name(d), ":  ", repr(first(d)), ":", repr(last(d)),
+            " (", repr(length(d)), ")")
+
+show(io::IO, d::CartesianDimension) =
+    print(io, name(d), ":  1:", repr(last(d)))
 
 Base.mimewritable(::MIME"text/html", d::Dimension) = true
 show(io::IO, a::MIME"text/html", d::Dimension) =
