@@ -30,10 +30,12 @@ export
     name,
     eltype,
     dimension,
+    update,
 
     Assignment,
 
     Factor,
+    scope,
     lengths,
     getdim,
     pattern,

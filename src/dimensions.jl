@@ -12,7 +12,7 @@ Should implements
     `name`
 Values should be some implementation of AbstractArray:
     `getindex`
-    Iteration
+    'start', `next`, `done`
     `first`
     `last`
     `eltype`
@@ -23,24 +23,29 @@ abstract Dimension{T}
 abstract RangeDimension{T} <: Dimension{T}
 
 """
-    ListDimension(name, states)
+    ListDimension(name::Symbol, states::AbstractArray)
+    ListDimension(name::Symbol, states::NTuple{N, T})
 
 A dimension whose states emnumerated in an array.
 """
 immutable ListDimension{T} <: Dimension{T}
     name::Symbol
-    states::NTuple{T}
+    states::Tuple{Vararg{T}}
 
-    function ListDimension(name::Symbol, states::AbstractVector{T})
+    function ListDimension(name::Symbol, states::Tuple)
         allunique(states) || non_unique_states_error()
         length(states) > 1 || singleton_dimension_error(length(states))
-        states_t = (states...)
-        new(name, states_t)
+
+        new_states = promote(states...)
+        new(name, new_states)
     end
 end
 
-ListDimension{T}(name::Symbol, states::AbstractVector{T}) =
+ListDimension{T}(name::Symbol, states::Tuple{Vararg{T}}) =
     ListDimension{T}(name, states)
+
+ListDimension{T}(name::Symbol, states::AbstractVector{T}) =
+    ListDimension{T}(name, (states...))
 
 """
     StepDimension(name::Symbol, states::StepRange{T, S})
@@ -117,8 +122,19 @@ CartesianDimension{T<:Integer}(name::Symbol, length::T) =
 ###############################################################################
 #                   Functions
 
+# genaric name and value
+"""
+    name(d::Dimension)
+
+Return the name of the dimension, as a symbol
+"""
 name(d::Dimension) = d.name
 
+"""
+    values(d::Dimension)
+
+Return the possible values a dimension can take
+"""
 Base.values(d::Dimension) = d.states
 
 Base.length(d::Dimension) = length(values(d))
@@ -137,11 +153,11 @@ maximum(d::Dimension) = maximum(values(d))
 
 #                   Iterator Interface
 
-Base.start(dim::Dimension) = start(dim.states)
+Base.start(d::Dimension) = start(values(d))
 
-Base.next(dim::Dimension, i) = next(dim.states, i)
+Base.next(d::Dimension, i) = next(values(d), i)
 
-Base.done(dim::Dimension, i) = done(dim.states, i)
+Base.done(d::Dimension, i) = done(values(d), i)
 
 Base.eltype{T}(::Dimension{T}) = T
 
@@ -206,17 +222,14 @@ end
 #                   Indexing
 
 # custom indexin for integer (and float?) ranges
+# TODO profile this and see if its worthy
 function indexin{T<:Integer}(xs::Vector{T}, d::RangeDimension{T})
     inds = zeros(Int, size(xs))
 
-    for (i, x) in enumerate(xs)
-        if first(d) <= x <= last(d)
-            (ind, rem) = divrem(x - first(d), step(d))
-            if rem == 0
-                inds[i] = ind + 1
-            end
-        end
-    end
+    (ds, rs) = divrem(xs - first(d), step(d))
+    valid = (rs .== 0) & (minimum(d) .≤ xs .≤ maximum(d))
+    inds[valid] = abs(ds[valid]) + 1
+    inds == indexin(xs, d)
 
     return inds
 end
@@ -228,23 +241,28 @@ indexin(xs::AbstractArray, d::Dimension) = indexin(xs, values(d))
 """
     update(dim::Dimension, I)
 
-Return the cartesian index and an updated dimension from `I`
+Return the indicies of `I` in `dim` and  an updated dimension from `I`
 
 `I` is either an array of states found in dim or a logical index.
 """
-function update(dim::Dimension, I)
-    error("Not Implemented") # TODO
-end
+update(dim::Dimension, I) = _update(dim, indexin(I, dim))
 
-function update(dim::Dimension, I::BitVector)
-    error("Not Implemented") # TODO
+update(dim::Dimension, I::AbstractVector{Bool}) = _update(dim, find(I))
+
+# given the index
+function _update(dim::Dimension, inds::Vector{Int})
+    vs = dim[inds]
+    new_d = dimension(name(dim), vs)
+
+    return(inds, new_d)
 end
 
 #                   AbstractArray Interfact
 # the actual index in I
-# TODO getindex
-# TODO Base.linearindexing
-# TODO endof
+Base.getindex(d::Dimension, I) = getindex(values(d), I)
+# override for list dims to get arrays, not tuples
+Base.getindex(d::ListDimension, I::AbstractArray) = [getindex(values(d), I)...]
+Base.endof(d::Dimension) = endof(values(d))
 
 
 ###############################################################################
@@ -255,6 +273,8 @@ end
 Pick the best type of dimension type based on the type of states.
 """
 dimension(name::Symbol, states::AbstractVector) =
+    ListDimension(name, states)
+dimension(name::Symbol, states::Tuple) =
     ListDimension(name, states)
 dimension(name::Symbol, states::StepRange) =
     StepDimension(name, states)

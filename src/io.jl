@@ -17,7 +17,7 @@ show(io::IO, d::UnitDimension) =
 show(io::IO, d::CartesianDimension) =
     print(io, name(d), ":  1:", repr(last(d)))
 
-Base.mimewritable(::MIME"text/html", d::Dimension) = true
+Base.mimewritable(::MIME"text/html", d::Dimension) = false
 show(io::IO, a::MIME"text/html", d::Dimension) =
         print(io, replace(replace(repr(d), "\n", "<br>"),
                 "  ", "&emsp;"))
@@ -30,7 +30,7 @@ function Base.show(io::IO, ϕ::Factor)
     end
 end
 
-Base.mimewritable(::MIME"text/html", ϕ::Factor) = true
+Base.mimewritable(::MIME"text/html", ϕ::Factor) = false
 Base.show(io::IO, a::MIME"text/html", ϕ::Factor) =
         show(io, a, DataFrame(ϕ))
 

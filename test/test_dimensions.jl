@@ -117,6 +117,45 @@ l = CartesianDimension(:L, 31)
 @test all(values(l) .== 1:31)
 end
 
+#                   type promotion/inference
+let
+# TODO test dimension
+
+l = dimension(:l, (1, 2, 'a'))
+@test eltype(l) == Char
+
+l = dimension(:l, (1, 2, 3.5))
+@test eltype(l) == Float64
+
+end
+
+#                   Indexin tests
+let
+    rs = [-10:-1:-15, -15:1:-10, 15:-1:10, 15:-1:10,
+        20:-2:10, -10:2:-20, -21:3:-9]
+    ds = map(d -> dimension(:S, d), rs)
+
+    for d in ds
+        @test indexin([-12], values(d)) == indexin([-12], d)
+    end
+end
+
+let
+    rs = ['a':1:'d', 'e':-1:'a', 'a':3:'x']
+    ds = map(d -> dimension(:S, d), rs)
+
+    for d in ds
+        @test indexin(['c'], values(d)) == indexin(['c'], d)
+        @test indexin(['^'], values(d)) == indexin(['^'], d)
+    end
+end
+
+let
+    d = dimension(:x, 21:3:0)
+    xs = [1, 2, 5, 7, 201, 3, 0, -3, 4, 19, 24]
+    @test indexin(xs, d) == indexin(xs, value(d))
+end
+
 let
 X1 = OrdinalUnitDimension(:X, 3, 5)
 X2 = OrdinalUnitDimension(:X, 3, 5)

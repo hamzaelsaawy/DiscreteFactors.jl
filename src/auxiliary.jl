@@ -22,6 +22,9 @@ _check_dims_unique(dims::Vector{Symbol}) =
     return _check_dims_valid(dims[2:end], ϕ)
 end
 
+_check_dims_valid(dim::Symbol, φ::Factor) =
+    (dim in φ) || not_in_factor_error(dim)
+
 """
     duplicate(A, dims)
 

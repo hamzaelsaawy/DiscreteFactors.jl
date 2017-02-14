@@ -4,9 +4,13 @@
 # Main code and basic functions for Factors
 
 """
-    Factor(dims, potential)
+    Factor(dims::Vector{Dimension}, [potential::Array{Real}])
+    Factor(dims::Dimension, [potential::Vector{Real}])
+    Factor(dims::Vector{Symbol}, potential::Array{Real})
+    Factor(dims::Symbol, potential::Vector{Real})
 
-Create a Factor corresponding to the potential.
+Create a Factor corresponding to the potential, or a zero potential if none
+provided.
 """
 type Factor{D<:Dimension}
     dimensions::Vector{D}
@@ -48,8 +52,7 @@ function Factor{D<:Dimension}(dims::Vector{D})
 end
 
 # symbol names and potential
-Factor{V<:Real}(dim::Symbol, potential::Vector{V}) =
-    Factor([dim], potential)
+Factor{V<:Real}(dim::Symbol, potential::Vector{V}) = Factor([dim], potential)
 
 function Factor{V<:Real}(dims::Vector{Symbol}, potential::Array{V})
     (length(dims) == ndims(potential)) || not_enough_dims_error()
@@ -61,18 +64,28 @@ end
 """
     Factor(dims::Dict{Symbol})
     Factor(dims::Pair{Symbol}...)
+    Factor(potential::Array{Real}, dims::Pair{Symbol}...)
 
 Create factor from mappings from dimension names (symbols) to lengths,
 ranges, or arrays.
 
-Use dimension(::Symbol, ::Any) to create a Dimension from each pair.
+Uses dimension(::Symbol, ::Any) to create a Dimension from each pair.
 """
 function Factor(dims::Dict{Symbol})
     new_dims = [CartesianDimension(name, state) for (name, state) in dims]
     Factor(new_dims)
 end
 
-Factor(dims::Pair{Symbol}...) = Factor(Dict(dims))
+# this way, its order preserving ... if it matters
+function Factor(dims::Pair{Symbol}...)
+    new_dims = [dimension(n, a) for (n, a) in dims]
+    Factor(new_dims)
+end
+
+function Factor{V<:Real}(potential::Array{V}, dims::Pair{Symbol}...)
+    new_dims = [dimension(n, a) for (n, a) in dims]
+    Factor(new_dims, potential)
+end
 
 ###############################################################################
 #                   Methods
@@ -85,6 +98,13 @@ Base.eltype(::Factor) = Float64
 Get an array of the names of each dimension in `φ`.
 """
 Base.names(φ::Factor) = map(name, φ.dimensions)
+
+"""
+    scope(φ)
+
+Get the names of the dimension of φ
+"""
+scope(φ::Factor) = names(φ)
 
 Base.ndims(φ::Factor) = ndims(φ.potential)
 
@@ -101,6 +121,9 @@ Base.size{N}(φ::Factor, dims::Vararg{Symbol, N}) =
 Base.length(φ::Factor) = length(φ.potential)
 Base.length(φ::Factor, dim::Symbol) = length(getdim(φ, dim))
 Base.length(φ::Factor, dims::Vector{Symbol}) = [length(φ, dim) for dim in dims]
+
+Base.in(d::Dimension, φ::Factor) = d in φ.dimensions
+Base.in(d::Symbol, φ::Factor) = d in scope(φ)
 
 """
     indexin(dims, φ::Factor)
@@ -132,27 +155,16 @@ end
 end
 
 """
-    pattern(φ::Factor, dim)
+    pattern(φ::Factor, [dim])
 
 Return the index of the states of `dim`, given its current position in φ.
 """
-function pattern(φ::Factor, dim::Symbol)
-    ind = indexin(dim, φ)
-    lens = size(φ)
-
-    (ind == 0) && not_in_factor_error(dim)
-
-    inner = prod(lens[1:(ind-1)])
-    outer = Int(length(φ) / inner / lens[ind])
-
-    repeat(Vector(1:length(φ.dimensions[ind])), inner=inner, outer=outer)
-end
-
+pattern(φ::Factor, dim::Symbol) = pattern(φ, [dim])
 function pattern(φ::Factor, dims::Vector{Symbol})
     _check_dims_valid(dims, φ)
 
     inds = indexin(dims, φ)
-    lens = size(φ)
+    lens = Int[size(φ)...]
 
     inners = vcat(1, cumprod(lens[1:(end-1)]))
     outers = Vector{Int}(length(φ) ./ lens[inds] ./ inners[inds])
@@ -162,7 +174,7 @@ function pattern(φ::Factor, dims::Vector{Symbol})
 end
 
 function pattern(φ::Factor)
-    lens = lengths(φ)
+    lens = Int[size(φ)...]
 
     inners = vcat(1, cumprod(lens[1:(end-1)]))
     outers = Vector{Int}(length(φ) ./ lens ./ inners)
@@ -172,20 +184,25 @@ function pattern(φ::Factor)
 end
 
 """
-    pattern_states(φ::Factor, dim)
+    pattern_states(φ::Factor, [dim])
 
 Returns the states of `dim`, given its current position in φ.
 """
 pattern_states(φ::Factor, dim::Symbol) =
-    getdim(φ, dim).states[pattern(φ, dims)]
+    getdim(φ, dim)[pattern(φ, dims)]
 
 function pattern_states(φ::Factor, dims::Vector{Symbol})
     dims = getdim(φ, dims)
-    return hcat([d.states[pattern(φ, d.name)] for d in dims]...)
+    pat = pattern(φ, dims)
+
+    return hcat([d[pat[:, i]] for (i, d) in enumerate(dims)]...)
 end
 
-pattern_states(φ::Factor) =
-    hcat([d.states[pattern(φ, d.name)] for d in φ.dimensions]...)
+function pattern_states(φ::Factor)
+    pat = pattern(φ)
+
+    return hcat([d[pat[:, i]] for (i, d) in enumerate(φ.dimensions)]...)
+end
 
 """
 Appends a new dimension to a Factor
