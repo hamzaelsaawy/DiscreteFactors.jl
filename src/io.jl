@@ -23,10 +23,14 @@ show(io::IO, a::MIME"text/html", d::Dimension) =
                 "  ", "&emsp;"))
 
 function Base.show(io::IO, ϕ::Factor)
-    print(io, "$(length(ϕ)) instantiations:")
-    for (d, s) in zip(ϕ.dimensions, size(ϕ))
-        println(io, "")
-        print(io, "\t", d, " (", s, ")")
+    if length(ϕ) > 1
+        print(io, length(ϕ), " instantiations:")
+        for d in ϕ.dimensions
+            println(io, "")
+            print(io, "\t", d)
+        end
+    else
+        print(io, "1 instantiation: ", ϕ.potential[1])
     end
 end
 

@@ -5,12 +5,12 @@
 
 """
     Factor(dims::Vector{Dimension}, [potential::Array{Real}])
-    Factor(dims::Dimension, [potential::Vector{Real}])
+    Factor(dim::Dimension, [potential::Vector{Real}])
     Factor(dims::Vector{Symbol}, potential::Array{Real})
-    Factor(dims::Symbol, potential::Vector{Real})
+    Factor(dim::Symbol, potential::Vector{Real})
 
-Create a Factor corresponding to the potential, or a zero potential if none
-provided.
+Create a Factor with scope `dims` and potential `potential` (or a zero
+potential).
 """
 type Factor{D<:Dimension}
     dimensions::Vector{D}
@@ -40,7 +40,7 @@ Factor{D<:Dimension, V<:Real}(dims::Vector{D}, potential::Array{V}) =
 Factor{D<:Dimension}(dims::Vector{D}, potential::Array{Float64}) =
     Factor{D}(dims, potential)
 
-Factor{V<:Real}(dimension::Dimension, potential::Vector{V}) =
+Factor{V<:Real}(dim::Dimension, potential::Vector{V}) =
     Factor([dim], potential)
 
 # just dimensions, create zero potential
@@ -69,10 +69,10 @@ end
 Create factor from mappings from dimension names (symbols) to lengths,
 ranges, or arrays.
 
-Uses dimension(::Symbol, ::Any) to create a Dimension from each pair.
+Uses `dimension(::Symbol, ::Any)` to create a Dimension from each pair.
 """
 function Factor(dims::Dict{Symbol})
-    new_dims = [CartesianDimension(name, state) for (name, state) in dims]
+    new_dims = [dimension(name, state) for (name, state) in dims]
     Factor(new_dims)
 end
 
@@ -86,6 +86,13 @@ function Factor{V<:Real}(potential::Array{V}, dims::Pair{Symbol}...)
     new_dims = [dimension(n, a) for (n, a) in dims]
     Factor(new_dims, potential)
 end
+
+"""
+    Factor(potential::Real)
+
+Create a zero-dimensional Factor
+"""
+Factor(potential::Real) = Factor(Dimension[], squeeze(Float64[potential], 1))
 
 ###############################################################################
 #                   Methods

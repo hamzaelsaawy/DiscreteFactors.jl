@@ -34,7 +34,7 @@ immutable ListDimension{T} <: Dimension{T}
 
     function ListDimension(name::Symbol, states::Tuple)
         allunique(states) || non_unique_states_error()
-        length(states) > 1 || singleton_dimension_error(length(states))
+        _check_singleton(states)
 
         new_states = promote(states...)
         new(name, new_states)
@@ -58,7 +58,7 @@ immutable StepDimension{T, S} <: RangeDimension{T}
     states::StepRange{T, S}
 
     function StepDimension(name::Symbol, states::StepRange{T, S})
-        length(states) > 1 || singleton_dimension_error(length(states))
+        _check_singleton(states)
 
         new(name, states)
     end
@@ -84,7 +84,7 @@ immutable UnitDimension{T<:Real} <: RangeDimension{T}
     states::UnitRange{T}
 
     function UnitDimension(name::Symbol, states::UnitRange{T})
-        length(states) > 1 || singleton_dimension_error(length(states))
+        _check_singleton(states)
 
         new(name, states)
     end
@@ -107,7 +107,7 @@ immutable CartesianDimension{T<:Integer} <: RangeDimension{T}
     states::OneTo{T}
 
     function CartesianDimension(name::Symbol, states::OneTo{T})
-        length(states) > 1 || singleton_dimension_error(length(states))
+        _check_singleton(states)
 
         new(name, states)
     end
@@ -165,19 +165,16 @@ Base.eltype{T}(::Dimension{T}) = T
 #                   Comparisons and Equality
 
 ==(d1::Dimension, d2::Dimension) =
-    (d1.name == d2.name) &&
-    (length(d1.states) == length(d2.states)) &&
-    all(values(d1) .== values(d2))
+    (name(d1) == name(d2)) && _value_compare(values(d1), values(d2))
 
 # states should all be unique
-.==(d::Dimension, x) = values(d) .== convert(eltype(d), x)
+.==(d::Dimension, x) = values(d) .== x
 
 .!=(d::Dimension, x) = !(d .== x)
 
 in(x, d::Dimension) = any(d .== x)
 
-findfirst(d::Dimension, x) =
-    findfirst(values(d), convert(eltype(d), x))
+findfirst(d::Dimension, x) = findfirst(values(d), x)
 
 # can't be defined in terms of each b/c of non-trivial case of x ∉ d
 @inline function .<(d::Dimension, x)

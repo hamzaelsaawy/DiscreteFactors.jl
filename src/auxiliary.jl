@@ -5,9 +5,13 @@
 
 typealias Assignment{T<:Any} Dict{Symbol, T}
 
+# dimensions need at least 1 value
+_check_singleton(states) =
+    length(states) > 1 || singleton_dimension_error(length(states))
+
 # dims are unique
 _check_dims_unique{D<:Dimension}(dims::Vector{D}) =
-    _check_dims_unique(map(name, dims))
+    (length(dims) == 0) || _check_dims_unique(map(name, dims))
 
 _check_dims_unique(dims::Vector{Symbol}) =
     allunique(dims) || non_unique_dims_error()
@@ -24,6 +28,21 @@ end
 
 _check_dims_valid(dim::Symbol, φ::Factor) =
     (dim in φ) || not_in_factor_error(dim)
+
+
+# comparing tuples with other stuff
+_value_compare(t1::Tuple, t2::Tuple) = t1 == t2
+_value_compare(a1::AbstractArray, a2::AbstractArray) = a1 == a2
+_value_compare(a::AbstractArray, t::Tuple) = _value_compare(a, t)
+@inline function _value_compare(t::Tuple, a::AbstractArray)
+    (length(t) == length(a)) || return false
+
+    for i in 1:length(t)
+        (a[i] == t[i]) || return false
+    end
+
+    return true
+end
 
 """
     duplicate(A, dims)
