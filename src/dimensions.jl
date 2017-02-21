@@ -3,124 +3,48 @@
 #
 # Main file for Dimension datatype
 
-# abstract Dimension{T} <: AbstractVector{T}
 """
-A `Dimension` ... does what?
+    Dimension(name::Symbol, support::AbstractVector)
 
-Should implements
-    `values`
-    `name`
-Values should be some implementation of AbstractArray:
-    `getindex`
-    'start', `next`, `done`
-    `first`
-    `last`
-    `eltype`
+A dimesnion ... does what ???
 """
-abstract Dimension{T}
-
-# stored as a range
-abstract RangeDimension{T} <: Dimension{T}
-
-"""
-    ListDimension(name::Symbol, states::AbstractArray)
-    ListDimension(name::Symbol, states::NTuple{N, T})
-
-A dimension whose states emnumerated in an array.
-"""
-immutable ListDimension{T} <: Dimension{T}
+type Dimension{T<:AbstractArray} # <: AbstractVector
     name::Symbol
-    states::Tuple{Vararg{T}}
+    support::T
 
-    function ListDimension(name::Symbol, states::Tuple)
-        allunique(states) || non_unique_states_error()
-        _check_singleton(states)
+    function Dimension(name::Symbol, support::T)
+        allunique(support) || non_unique_support_error()
+        _check_singleton(support)
 
-        new_states = promote(states...)
-        new(name, new_states)
+        new_support = promote(support...)
+        new(name, new_support)
     end
 end
 
-ListDimension{T}(name::Symbol, states::Tuple{Vararg{T}}) =
-    ListDimension{T}(name, states)
+Dimension{T}(name::Symbol, support::AbstractVector{T}) =
+    Dimension{T}(name, support)
 
-ListDimension{T}(name::Symbol, states::AbstractVector{T}) =
-    ListDimension{T}(name, (states...))
+Dimension(name::Symbol, support::Tuple) =
+    Dimension(name, [promote(support)...])
 
-"""
-    StepDimension(name::Symbol, states::StepRange{T, S})
-    StepDimension(name::Symbol, start::T, [step::S=1,] stop::T)
-
-Similar to a StepRange, enumerates values over start:step:stop
-"""
-immutable StepDimension{T, S} <: RangeDimension{T}
-    name::Symbol
-    states::StepRange{T, S}
-
-    function StepDimension(name::Symbol, states::StepRange{T, S})
-        _check_singleton(states)
-
-        new(name, states)
-    end
-end
-
-StepDimension{T,S}(name::Symbol, states::StepRange{T, S}) =
-    StepDimension{T,S}(name, states)
-
-StepDimension{T,S}(name::Symbol, start::T, step::S, stop::T) =
-    StepDimension{T,S}(name, start:step:stop)
-
-StepDimension{T}(name::Symbol, start::T, stop::T) =
-    StepDimension{T,Int}(name, start:1:stop)
+# swap out unit ranges with OneTo
+Dimension{T}(name::Symbol, support::UnitRange{T<:Integer}) =
+    (first(support) == 1 && last(support) > 0) ?
+        Dimension(name, Base.OneTo(length(support)) :
+        Dimension(name, support)
 
 """
-    UnitDimension(name::Symbol, states:UnitRange{T})
-    UnitDimension(name::Symbol, start::T, stop::T)
+    Dimension(name::Symbol, length::Integer)
 
-Similar to a UnitRange, enumerates values over start:stop
+Create a dimension whose support ranges from `1` to `length`.
 """
-immutable UnitDimension{T<:Real} <: RangeDimension{T}
-    name::Symbol
-    states::UnitRange{T}
+Dimension(name::Symbol, length::Int) =
+    Dimension(name, Base.OneTo(length))
 
-    function UnitDimension(name::Symbol, states::UnitRange{T})
-        _check_singleton(states)
-
-        new(name, states)
-    end
-end
-
-UnitDimension{T<:Real}(name::Symbol, states::UnitRange{T}) =
-    UnitDimension{T}(name, states)
-
-UnitDimension{T<:Real}(name::Symbol, start::T, stop::T) =
-    UnitDimension{T}(name, start:stop)
-
-"""
-    CartesianDimension(name::Symbol, states::Base.OneTo)
-    CartesianDimension(name::Symbol, length)
-
-An integer dimension that starts at 1.
-"""
-immutable CartesianDimension{T<:Integer} <: RangeDimension{T}
-    name::Symbol
-    states::OneTo{T}
-
-    function CartesianDimension(name::Symbol, states::OneTo{T})
-        _check_singleton(states)
-
-        new(name, states)
-    end
-end
-
-CartesianDimension{T<:Integer}(name::Symbol, states::OneTo{T}) =
-    CartesianDimension{T}(name, states)
-
-CartesianDimension{T<:Integer}(name::Symbol, length::T) =
-    CartesianDimension{T}(name, OneTo(length))
+typealias RangeDimension <: Dimension{T<:Range}
 
 ###############################################################################
-#                   Functions
+#                   Basic Functions
 
 # genaric name and value
 """
@@ -133,41 +57,95 @@ name(d::Dimension) = d.name
 """
     values(d::Dimension)
 
-Return the possible values a dimension can take
+Return the possible values a dimension can take.
 """
-Base.values(d::Dimension) = d.states
+Base.values(d::Dimension) = d.support
 
-Base.length(d::Dimension) = length(values(d))
+"""
+    support(d::Dimension)
 
-Base.size(d::Dimension) = size(values(d))
+Return the possible values a dimension can take.
+"""
+support(d::Dimension) = d |> values
 
-Base.step(d::RangeDimension) = step(values(d))
+Base.length(d::Dimension) = d |> support |> length
 
-Base.first(d::Dimension) = first(values(d))
+Base.size(d::Dimension) = d |> support |> size
 
-Base.last(d::Dimension) = last(values(d))
+Base.first(d::Dimension) = d |> support |> first
 
-minimum(d::Dimension) = minimum(values(d))
+Base.last(d::Dimension) = d |> support |> last
 
-maximum(d::Dimension) = maximum(values(d))
+minimum(d::Dimension) = d |> support |> minimum
 
-#                   Iterator Interface
+maximum(d::Dimension) = d |> support |> maximum
 
-Base.start(d::Dimension) = start(values(d))
+Base.step(d::RangeDimension) = d |> support |> step
 
-Base.next(d::Dimension, i) = next(values(d), i)
 
-Base.done(d::Dimension, i) = done(values(d), i)
+###############################################################################
+#                   Iterating
 
-Base.eltype{T}(::Dimension{T}) = T
+Base.start(d::Dimension) = d |> support |> start
+
+Base.next(d::Dimension, i) = d |> support |> next
+
+Base.done(d::Dimension, i) = d |> support |> done
+
+Base.eltype(d::Dimension{T}) = d |> support |> eltype
+
+###############################################################################
+#                   Indexing
+
+Base.getindex(d::Dimension, I) = getindex(values(d), I)
+
+Base.endof(d::Dimension) = endof(values(d))
+
+# custom indexin for integer (and float?) ranges
+# TODO profile this and see if its worthy
+#@inline function indexin(xs::AbstractVector, d::RangeDimension)
+#    inds = zeros(Int, size(xs))
+#
+#    (ds, rs) = divrem(xs - first(d), step(d))
+#    valid = (rs .== 0) & (minimum(d) .≤ xs .≤ maximum(d))
+#    inds[valid] = abs(ds[valid]) + 1
+#    inds == indexin(xs, d)
+#
+#    return inds
+#end
+
+indexin(x, d::Dimension) = first(indexin([x], values(d)))
+
+indexin(xs::AbstractArray, d::Dimension) = indexin(xs, values(d))
+
+"""
+    update(dim::Dimension, I)
+
+Return the indicies of `I` in `dim` and  an updated dimension from `I`
+
+`I` is either an array of states found in `dim` or a logical index.
+"""
+update(d::Dimension, I) = _update(dim, indexin(I, d))
+
+update(d::Dimension, I::AbstractVector{Bool}) = _update(d, find(I))
+
+# given the index
+_update(d::Dimension, ind::Int) = (ind, nothing)
+function _update(d::Dimension, inds::Vector{Int})
+    vs = d[inds]
+    new_d = Dimension(name(d), vs)
+
+    return(inds, new_d)
+end
 
 ###############################################################################
 #                   Comparisons and Equality
 
 ==(d1::Dimension, d2::Dimension) =
-    (name(d1) == name(d2)) && _value_compare(values(d1), values(d2))
+    (name(d1) == name(d2)) &&
+    (length(d1) == length(d2) &&
+    (d1 == d2)
 
-# states should all be unique
 .==(d::Dimension, x) = values(d) .== x
 
 .!=(d::Dimension, x) = !(d .== x)
@@ -214,73 +192,4 @@ end
 
     return ind
 end
-
-###############################################################################
-#                   Indexing
-
-# custom indexin for integer (and float?) ranges
-# TODO profile this and see if its worthy
-function indexin{T<:Integer}(xs::Vector{T}, d::RangeDimension{T})
-    inds = zeros(Int, size(xs))
-
-    (ds, rs) = divrem(xs - first(d), step(d))
-    valid = (rs .== 0) & (minimum(d) .≤ xs .≤ maximum(d))
-    inds[valid] = abs(ds[valid]) + 1
-    inds == indexin(xs, d)
-
-    return inds
-end
-
-indexin(x, d::Dimension) = first(indexin([x], values(d)))
-
-indexin(xs::AbstractArray, d::Dimension) = indexin(xs, values(d))
-
-"""
-    update(dim::Dimension, I)
-
-Return the indicies of `I` in `dim` and  an updated dimension from `I`
-
-`I` is either an array of states found in dim or a logical index.
-"""
-update(dim::Dimension, I) = _update(dim, indexin(I, dim))
-
-update(dim::Dimension, I::AbstractVector{Bool}) = _update(dim, find(I))
-
-# given the index
-function _update(dim::Dimension, inds::Vector{Int})
-    vs = dim[inds]
-    new_d = dimension(name(dim), vs)
-
-    return(inds, new_d)
-end
-
-#                   AbstractArray Interfact
-# the actual index in I
-Base.getindex(d::Dimension, I) = getindex(values(d), I)
-# override for list dims to get arrays, not tuples
-Base.getindex(d::ListDimension, I::AbstractArray) = [getindex(values(d), I)...]
-Base.endof(d::Dimension) = endof(values(d))
-
-
-###############################################################################
-#                   Infer Dimension
-"""
-    dimension{T<:AbstractArray}(name::Symbol, states::T)
-
-Pick the best type of dimension type based on the type of states.
-"""
-dimension(name::Symbol, states::AbstractVector) =
-    ListDimension(name, states)
-dimension(name::Symbol, states::Tuple) =
-    ListDimension(name, states)
-dimension(name::Symbol, states::StepRange) =
-    StepDimension(name, states)
-dimension(name::Symbol, states::UnitRange) =
-    first(states) == 1 ?
-        CartesianDimension(name, length(states)) :
-        UnitDimension(name, states)
-dimension(name::Symbol, states::Base.OneTo) =
-    CartesianDimension(name, states)
-dimension(name::Symbol, length::Int) =
-    CartesianDimension(name, length)
 

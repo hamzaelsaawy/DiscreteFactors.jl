@@ -3,8 +3,7 @@
 #
 # All the errors that can be thrown
 
-singleton_dimension_error(l) = throw(ArgumentError("Dimension is singleton " *
-            "with length $(l)"))
+empty_support_error() = throw(ArgumentError("Dimension support is empty"))
 
 not_enough_dims_error() = throw(ArgumentError("`potential` must have as " *
             "many dimensions as `dimensions`"))

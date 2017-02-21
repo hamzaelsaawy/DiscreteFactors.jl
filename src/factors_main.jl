@@ -90,7 +90,7 @@ end
 """
     Factor(potential::Real)
 
-Create a zero-dimensional Factor
+Create a zero-dimensional Factor.
 """
 Factor(potential::Real) = Factor(Dimension[], squeeze(Float64[potential], 1))
 
@@ -102,16 +102,16 @@ Base.eltype(::Factor) = Float64
 """
     names(φ::Factor)
 
-Get an array of the names of each dimension in `φ`.
+Get an array of the names of the dimensions of `φ`.
 """
 Base.names(φ::Factor) = map(name, φ.dimensions)
 
 """
     scope(φ)
 
-Get the names of the dimension of φ
+Get the dimensions of `φ`.
 """
-scope(φ::Factor) = names(φ)
+scope(φ::Factor) = φ.dimensions
 
 Base.ndims(φ::Factor) = ndims(φ.potential)
 
@@ -129,8 +129,8 @@ Base.length(φ::Factor) = length(φ.potential)
 Base.length(φ::Factor, dim::Symbol) = length(getdim(φ, dim))
 Base.length(φ::Factor, dims::Vector{Symbol}) = [length(φ, dim) for dim in dims]
 
-Base.in(d::Dimension, φ::Factor) = d in φ.dimensions
-Base.in(d::Symbol, φ::Factor) = d in scope(φ)
+Base.in(d::Dimension, φ::Factor) = d in scope(φ)
+Base.in(d::Symbol, φ::Factor) = d in names(φ)
 
 """
     indexin(dims, φ::Factor)

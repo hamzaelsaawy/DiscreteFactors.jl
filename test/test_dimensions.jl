@@ -129,7 +129,7 @@ l = dimension(:l, (1, 2, 3.5))
 
 end
 
-#                   Indexin tests
+#                   indexin tests
 let
     rs = [-10:-1:-15, -15:1:-10, 15:-1:10, 15:-1:10,
         20:-2:10, -10:2:-20, -21:3:-9]
@@ -154,6 +154,17 @@ let
     d = dimension(:x, 21:3:0)
     xs = [1, 2, 5, 7, 201, 3, 0, -3, 4, 19, 24]
     @test indexin(xs, d) == indexin(xs, value(d))
+end
+
+#                   update
+let
+    x = Dimension(:X, 0:3:15)
+
+    @test false
+    update(x, [1, 3])
+    update(x, 0:3:6)
+    update(x, [true, true, false, false, true, true])
+    update(x, 6) # returns just a number and `nothing`
 end
 
 let

@@ -6,8 +6,7 @@
 typealias Assignment{T<:Any} Dict{Symbol, T}
 
 # dimensions need at least 1 value
-_check_singleton(states) =
-    length(states) > 1 || singleton_dimension_error(length(states))
+_check_singleton(support) = (length(support) > 0) || empty_support_error()
 
 # dims are unique
 _check_dims_unique{D<:Dimension}(dims::Vector{D}) =
@@ -17,6 +16,9 @@ _check_dims_unique(dims::Vector{Symbol}) =
     allunique(dims) || non_unique_dims_error()
 
 # make sure all dims are valid (in φ)
+_check_dims_valid(dim::Symbol, φ::Factor) =
+    (dim in φ) || not_in_factor_error(dim)
+
 @inline function _check_dims_valid(dims::Vector{Symbol}, ϕ::Factor)
     isempty(dims) && return
 
@@ -24,24 +26,6 @@ _check_dims_unique(dims::Vector{Symbol}) =
     (dim in ϕ) || not_in_factor_error(dim)
 
     return _check_dims_valid(dims[2:end], ϕ)
-end
-
-_check_dims_valid(dim::Symbol, φ::Factor) =
-    (dim in φ) || not_in_factor_error(dim)
-
-
-# comparing tuples with other stuff
-_value_compare(t1::Tuple, t2::Tuple) = t1 == t2
-_value_compare(a1::AbstractArray, a2::AbstractArray) = a1 == a2
-_value_compare(a::AbstractArray, t::Tuple) = _value_compare(a, t)
-@inline function _value_compare(t::Tuple, a::AbstractArray)
-    (length(t) == length(a)) || return false
-
-    for i in 1:length(t)
-        (a[i] == t[i]) || return false
-    end
-
-    return true
 end
 
 """
