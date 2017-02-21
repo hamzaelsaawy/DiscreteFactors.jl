@@ -4,18 +4,19 @@
 # Printing and stuff
 
 show(io::IO, d::Dimension) =
-    print(io, name(d), ":  ", values(d), " (", length(d), ")")
+    print(io, name(d), ":  ", _support_repr(values(d)))
 
-show(io::IO, d::RangeDimension) =
-    print(io, name(d), ":  ", repr(first(d)), ":", repr(step(d)), ":",
-            repr(last(d)), " (", repr(length(d)), ")")
+_support_repr(v::AbstractVector) =
+    repr(v) * " (" * repr(length(v)) * ")"
 
-show(io::IO, d::UnitDimension) =
-    print(io, name(d), ":  ", repr(first(d)), ":", repr(last(d)),
-            " (", repr(length(d)), ")")
+_support_repr(v::Range) =
+    repr(first(v)) * ":" * repr(step(v)) * ":" * repr(last(v)) *
+            " (" * repr(length(v)) * ")"
 
-show(io::IO, d::CartesianDimension) =
-    print(io, name(d), ":  1:", repr(last(d)))
+_support_repr(v::UnitRange) =
+    repr(first(v)) * ":" * repr(last(v)) * " (" * repr(length(v)) * ")"
+
+_support_repr(v::Base.OneTo) = "1:" * repr(last(v))
 
 Base.mimewritable(::MIME"text/html", d::Dimension) = false
 show(io::IO, a::MIME"text/html", d::Dimension) =

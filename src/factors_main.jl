@@ -56,7 +56,7 @@ Factor{V<:Real}(dim::Symbol, potential::Vector{V}) = Factor([dim], potential)
 
 function Factor{V<:Real}(dims::Vector{Symbol}, potential::Array{V})
     (length(dims) == ndims(potential)) || not_enough_dims_error()
-    new_dims = map(CartesianDimension, dims, size(potential))
+    new_dims = map(Dimension, dims, size(potential))
 
     return Factor(new_dims, potential)
 end
@@ -72,18 +72,18 @@ ranges, or arrays.
 Uses `dimension(::Symbol, ::Any)` to create a Dimension from each pair.
 """
 function Factor(dims::Dict{Symbol})
-    new_dims = [dimension(name, state) for (name, state) in dims]
+    new_dims = [Dimension(name, state) for (name, state) in dims]
     Factor(new_dims)
 end
 
 # this way, its order preserving ... if it matters
 function Factor(dims::Pair{Symbol}...)
-    new_dims = [dimension(n, a) for (n, a) in dims]
+    new_dims = [Dimension(n, a) for (n, a) in dims]
     Factor(new_dims)
 end
 
 function Factor{V<:Real}(potential::Array{V}, dims::Pair{Symbol}...)
-    new_dims = [dimension(n, a) for (n, a) in dims]
+    new_dims = [Dimension(n, a) for (n, a) in dims]
     Factor(new_dims, potential)
 end
 

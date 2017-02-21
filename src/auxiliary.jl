@@ -17,17 +17,28 @@ _check_dims_unique(dims::Vector{Symbol}) =
 
 # make sure all dims are valid (in φ)
 _check_dims_valid(dim::Symbol, φ::Factor) =
-    (dim in φ) || not_in_factor_error(dim)
+    (dim in φ) || not_in_factor_error(dim, φ)
 
 @inline function _check_dims_valid(dims::Vector{Symbol}, ϕ::Factor)
     isempty(dims) && return
 
     dim = first(dims)
-    (dim in ϕ) || not_in_factor_error(dim)
+    (dim in ϕ) || not_in_factor_error(dim, φ)
 
     return _check_dims_valid(dims[2:end], ϕ)
 end
 
+# make sure all the values are valid (in d)
+_check_values_valid(v, d::Dimension) = (v in d) || not_in_dimension_error(v, d)
+
+@inline function _check_values_valid(vs::AbstractArray, d::Dimension)
+    isempty(vs) && return
+
+    v = first(vs)
+    (v in d) || not_in_dimension_error(v, d)
+
+    return _check_values_valid(vs[2:end], d)
+end
 """
     duplicate(A, dims)
 

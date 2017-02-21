@@ -8,40 +8,41 @@
 
 A dimesnion ... does what ???
 """
-type Dimension{T<:AbstractArray} # <: AbstractVector
+type Dimension{T<:AbstractVector} # <: AbstractVector
     name::Symbol
     support::T
 
     function Dimension(name::Symbol, support::T)
-        allunique(support) || non_unique_support_error()
+        isa(support, Range) || allunique(support) || non_unique_support_error()
         _check_singleton(support)
 
-        new_support = promote(support...)
-        new(name, new_support)
+        new(name, support)
     end
 end
 
-Dimension{T}(name::Symbol, support::AbstractVector{T}) =
+Dimension{T<:AbstractVector}(name::Symbol, support::T) =
     Dimension{T}(name, support)
 
 Dimension(name::Symbol, support::Tuple) =
-    Dimension(name, [promote(support)...])
+    Dimension(name, [promote(support...)...])
 
 # swap out unit ranges with OneTo
-Dimension{T}(name::Symbol, support::UnitRange{T<:Integer}) =
+Dimension{V<:Integer}(name::Symbol, support::UnitRange{V}) =
     (first(support) == 1 && last(support) > 0) ?
-        Dimension(name, Base.OneTo(length(support)) :
-        Dimension(name, support)
+        Dimension{Base.OneTo{V}}(name, Base.OneTo(length(support))) :
+        Dimension{typeof(support)}(name, support)
 
 """
     Dimension(name::Symbol, length::Integer)
 
 Create a dimension whose support ranges from `1` to `length`.
 """
-Dimension(name::Symbol, length::Int) =
-    Dimension(name, Base.OneTo(length))
+Dimension(name::Symbol, length::Int) = Dimension(name, Base.OneTo(length))
 
-typealias RangeDimension <: Dimension{T<:Range}
+typealias RangeDimension{T<:Range} Dimension{T}
+typealias StepDimension{T, S} RangeDimension{StepRange{T, S}}
+typealias UnitDimension{T<:Real} RangeDimension{UnitRange{T}}
+typealias CartesianDimension{T<:Integer} RangeDimension{Base.OneTo{T}}
 
 ###############################################################################
 #                   Basic Functions
@@ -88,11 +89,11 @@ Base.step(d::RangeDimension) = d |> support |> step
 
 Base.start(d::Dimension) = d |> support |> start
 
-Base.next(d::Dimension, i) = d |> support |> next
+Base.next(d::Dimension, i) = next(support(d), i)
 
-Base.done(d::Dimension, i) = d |> support |> done
+Base.done(d::Dimension, i) = done(support(d), i)
 
-Base.eltype(d::Dimension{T}) = d |> support |> eltype
+Base.eltype(d::Dimension) = d |> support |> eltype
 
 ###############################################################################
 #                   Indexing
@@ -101,9 +102,9 @@ Base.getindex(d::Dimension, I) = getindex(values(d), I)
 
 Base.endof(d::Dimension) = endof(values(d))
 
-# custom indexin for integer (and float?) ranges
 # TODO profile this and see if its worthy
-#@inline function indexin(xs::AbstractVector, d::RangeDimension)
+# custom indexin for integer (and float?) ranges
+#@inline function Base.indexin(xs::AbstractVector, d::RangeDimension)
 #    inds = zeros(Int, size(xs))
 #
 #    (ds, rs) = divrem(xs - first(d), step(d))
@@ -114,26 +115,29 @@ Base.endof(d::Dimension) = endof(values(d))
 #    return inds
 #end
 
-indexin(x, d::Dimension) = first(indexin([x], values(d)))
+Base.indexin(x, d::Dimension) = first(indexin([x], values(d)))
 
-indexin(xs::AbstractArray, d::Dimension) = indexin(xs, values(d))
+Base.indexin(xs::AbstractArray, d::Dimension) = indexin(xs, values(d))
 
 """
-    update(dim::Dimension, I)
+    update(d::Dimension, I)
 
-Return the indicies of `I` in `dim` and  an updated dimension from `I`
+Return the indicies of `I` in `d` and an updated dimension using `I`.
 
-`I` is either an array of states found in `dim` or a logical index.
+`I` is either an array of states found in `dm` or a logical index.
 """
-update(d::Dimension, I) = _update(dim, indexin(I, d))
+@inline function update(d::Dimension, I)
+    _check_values_valid(I, d)
 
-update(d::Dimension, I::AbstractVector{Bool}) = _update(d, find(I))
+    return _update(d, indexin(I, d))
+end
+
+update(d::Dimension, I::AbstractVector{Bool}) = _update(d, Base.to_index(I))
 
 # given the index
 _update(d::Dimension, ind::Int) = (ind, nothing)
 function _update(d::Dimension, inds::Vector{Int})
-    vs = d[inds]
-    new_d = Dimension(name(d), vs)
+    new_d = Dimension(name(d), d[inds])
 
     return(inds, new_d)
 end
@@ -143,16 +147,16 @@ end
 
 ==(d1::Dimension, d2::Dimension) =
     (name(d1) == name(d2)) &&
-    (length(d1) == length(d2) &&
-    (d1 == d2)
+    (length(d1) == length(d2)) &&
+    all(support(d1) .== support(d2))
 
 .==(d::Dimension, x) = values(d) .== x
 
 .!=(d::Dimension, x) = !(d .== x)
 
-in(x, d::Dimension) = any(d .== x)
+Base.in(x, d::Dimension) = in(x, values(d))
 
-findfirst(d::Dimension, x) = findfirst(values(d), x)
+Base.findfirst(d::Dimension, x) = findfirst(values(d), x)
 
 # can't be defined in terms of each b/c of non-trivial case of x ∉ d
 @inline function .<(d::Dimension, x)

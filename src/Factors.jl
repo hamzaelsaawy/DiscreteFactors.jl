@@ -1,5 +1,6 @@
 # __precompile__(true)
 
+# TODO update(::Vector{Bool}) check if same length
 # TODO unparameterize factors
 # TODO x/0 = 0
 # TODO non-negative warning?
@@ -16,13 +17,14 @@
 module Factors
 
 import Base: .==, .!=, .<, .<=, .>, .>=, in, ==, *, /, +, -,
-        OneTo, indexin, findfirst, reducedim, broadcast, broadcast!,
+        show, reducedim, broadcast, broadcast!,
         show, sum, prod, maximum, minimum, join
 import Base.LinAlg: normalize, normalize
 import DataFrames
 
 export
-    ListDimension,
+    Dimension,
+    RangeDimension,
     StepDimension,
     UnitDimension,
     CartesianDimension,
@@ -43,12 +45,12 @@ export
 #=    getdim,
     reducedim!
 =#
-include("errors.jl")
 include("dimensions.jl")
 include("factors_main.jl")
 #include("factors_access.jl")
 #include("factors_dims.jl")
 include("dataframes.jl")
+include("errors.jl")
 include("auxiliary.jl")
 include("io.jl")
 
