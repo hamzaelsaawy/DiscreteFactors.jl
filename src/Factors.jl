@@ -13,6 +13,7 @@
 # TODO sub2ind for assignments
 # TODO broadcast fallback for empty arrays
 # TODO broadcast_reduce tag-team
+# TODO find a better error type for NegativeError
 
 module Factors
 
@@ -23,15 +24,13 @@ import Base.LinAlg: normalize, normalize
 import DataFrames
 
 export
+    # Dimension stuff
     Dimension,
     RangeDimension,
-    StepDimension,
-    UnitDimension,
-    CartesianDimension,
 
     name,
     eltype,
-    dimension,
+    spttype,
     update,
 
     Assignment,
@@ -41,18 +40,29 @@ export
     lengths,
     getdim,
     pattern,
-    pattern_states
-#=    getdim,
-    reducedim!
-=#
+    pattern_states,
+    getdim,
+    reducedim!,
+
+    # negatives stuff
+    set_negative_mode,
+    NegativeMode,
+    NegativeIgnore,
+    NegativeWarn,
+    NegativeError
+
 include("dimensions.jl")
+
 include("factors_main.jl")
-#include("factors_access.jl")
+#include("factors_index.jl")
+include("factors_iter.jl")
 #include("factors_dims.jl")
+
+include("negatives.jl")
 include("dataframes.jl")
-include("errors.jl")
-include("auxiliary.jl")
 include("io.jl")
+include("auxiliary.jl")
+include("errors.jl")
 
 end # module
 

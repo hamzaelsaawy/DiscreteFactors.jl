@@ -14,11 +14,11 @@ l = Dimension(:L, 31)
 @test_throws ArgumentError Dimension(:X, 0)
 @test_throws ArgumentError Dimension(:X, -1)
 
-@test typeof(values(c)) == Vector{String}
-@test typeof(values(o)) == Vector{Char}
-@test typeof(values(s)) == StepRange{Char, Int64}
-@test typeof(values(u)) == UnitRange{Int64}
-@test typeof(values(l)) == Base.OneTo{Int64}
+@test spttype(c) == Vector{String}
+@test spttype(o) == Vector{Char}
+@test spttype(s) == StepRange{Char, Int64}
+@test spttype(u) == UnitRange{Int64}
+@test spttype(l) == Base.OneTo{Int64}
 
 @test name(c) == :C
 @test name(o) == :O

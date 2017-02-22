@@ -4,9 +4,9 @@
 # Main code and basic functions for Factors
 
 """
-    Factor(dims::Vector{Dimension}, [potential::Array{Real}])
-    Factor(dim::Dimension, [potential::Vector{Real}])
-    Factor(dims::Vector{Symbol}, potential::Array{Real})
+    Factor(dims::AbstractVector{Dimension}, potential::Array{Real})
+    Factor(dim::Dimension, potential::Vector{Real})
+    Factor(dims::AbstractVector{Symbol}, potential::Array{Real})
     Factor(dim::Symbol, potential::Vector{Real})
 
 Create a Factor with scope `dims` and potential `potential` (or a zero
@@ -28,38 +28,57 @@ type Factor{D<:Dimension}
         (:potential in map(name, dimensions)) &&
             warn("having a dimension called `potential` will cause problems")
 
+        _check_negatives(potential)
+
         return new(dimensions, potential)
     end
 end
 
+#                   Default Outer Constructors
 # convert from ints and other reals to floats
-Factor{D<:Dimension, V<:Real}(dims::Vector{D}, potential::Array{V}) =
-    Factor{D}(dims, float(potential))
+Factor{D<:Dimension, V<:Real}(dims::AbstractVector{D},
+        potential::AbstractArray{V}) =
+    Factor{D}(collect(dims), float(potential))
 
 # when it actually is floats, avoid (potential) overhead of float() call
-Factor{D<:Dimension}(dims::Vector{D}, potential::Array{Float64}) =
-    Factor{D}(dims, potential)
+Factor{D<:Dimension}(dims::AbstractVector{D},
+        potential::AbstractArray{Float64}) =
+    Factor{D}(collect(dims), potential)
 
-Factor{V<:Real}(dim::Dimension, potential::Vector{V}) =
+Factor{V<:Real}(dim::Dimension, potential::AbstractVector{V}) =
     Factor([dim], potential)
 
-# just dimensions, create zero potential
-Factor(dim::Dimension) = Factor([dim])
-function Factor{D<:Dimension}(dims::Vector{D})
-    potential = zeros(Float64, [length(d) for d in dims]...)
-
-    return Factor(dims, potential)
-end
-
+#                   Symbols and Potential
 # symbol names and potential
-Factor{V<:Real}(dim::Symbol, potential::Vector{V}) = Factor([dim], potential)
+Factor{V<:Real}(dim::Symbol, potential::AbstractVector{V}) =
+    Factor([dim], potential)
 
-function Factor{V<:Real}(dims::Vector{Symbol}, potential::Array{V})
+function Factor{V<:Real}(dims::AbstractVector{Symbol}, potential::Array{V})
     (length(dims) == ndims(potential)) || not_enough_dims_error()
     new_dims = map(Dimension, dims, size(potential))
 
     return Factor(new_dims, potential)
 end
+
+"""
+    Factor(dims::AbstractVector{Dims}, [value=0])
+
+Create a factor with a potential initialized to `value`.
+Use `value=nothing` for an unitialized potential
+"""
+function Factor{D<:Dimension}(dims::AbstractVector{D}, value::Real=0)
+    potential = fill(float(value), map(length, dims)...)
+
+    return Factor(dims, potential)
+end
+
+function Factor{D<:Dimension}(dims::AbstractVector{D}, ::Void)
+    potential = Array{Float64}(map(length, dims)...)
+
+    return Factor(dims, potential)
+end
+
+Factor(dim::Dimension, value::Real=0) = Factor([dim], value)
 
 """
     Factor(dims::Dict{Symbol})
@@ -68,8 +87,6 @@ end
 
 Create factor from mappings from dimension names (symbols) to lengths,
 ranges, or arrays.
-
-Uses `dimension(::Symbol, ::Any)` to create a Dimension from each pair.
 """
 function Factor(dims::Dict{Symbol})
     new_dims = [Dimension(name, state) for (name, state) in dims]
@@ -82,7 +99,7 @@ function Factor(dims::Pair{Symbol}...)
     Factor(new_dims)
 end
 
-function Factor{V<:Real}(potential::Array{V}, dims::Pair{Symbol}...)
+function Factor{V<:Real}(potential::AbstractArray{V}, dims::Pair{Symbol}...)
     new_dims = [Dimension(n, a) for (n, a) in dims]
     Factor(new_dims, potential)
 end
@@ -129,88 +146,6 @@ Base.length(φ::Factor) = length(φ.potential)
 Base.length(φ::Factor, dim::Symbol) = length(getdim(φ, dim))
 Base.length(φ::Factor, dims::Vector{Symbol}) = [length(φ, dim) for dim in dims]
 
-Base.in(d::Dimension, φ::Factor) = d in scope(φ)
-Base.in(d::Symbol, φ::Factor) = d in names(φ)
-
-"""
-    indexin(dims, φ::Factor)
-
-Find index of dimension `dims` in `φ`. Return 0 if not in `φ`.
-"""
-Base.indexin(dim::Symbol, φ::Factor) = findnext(names(φ), dim, 1)
-Base.indexin(dims::Vector{Symbol}, φ::Factor) = indexin(dims, names(φ))
-
-"""
-    getdim(φ::Factor, dim::Symbol)
-    getdim(φ::Factor, dims::Vector{Symbol})
-
-Get the dimension with name `dim` in `φ`.
-"""
-@inline function getdim(φ::Factor, dim::Symbol)
-    i = indexin(dim, φ)
-
-    (i == 0) && not_in_factor_error(dim)
-
-    return φ.dimensions[i]
-end
-
-@inline function getdim(φ::Factor, dims::Vector{Symbol})
-    _check_dims_valid(dims, φ)
-
-    inds = indexin(dims, φ)
-    return φ.dimensions[inds]
-end
-
-"""
-    pattern(φ::Factor, [dim])
-
-Return the index of the states of `dim`, given its current position in φ.
-"""
-pattern(φ::Factor, dim::Symbol) = pattern(φ, [dim])
-function pattern(φ::Factor, dims::Vector{Symbol})
-    _check_dims_valid(dims, φ)
-
-    inds = indexin(dims, φ)
-    lens = Int[size(φ)...]
-
-    inners = vcat(1, cumprod(lens[1:(end-1)]))
-    outers = Vector{Int}(length(φ) ./ lens[inds] ./ inners[inds])
-
-    hcat([repeat(Vector(1:length(d)), inner=i, outer=o) for (d, i, o) in
-            zip(φ.dimensions[inds], inners[inds], outers)]...)
-end
-
-function pattern(φ::Factor)
-    lens = Int[size(φ)...]
-
-    inners = vcat(1, cumprod(lens[1:(end-1)]))
-    outers = Vector{Int}(length(φ) ./ lens ./ inners)
-
-    hcat([repeat(Vector(1:length(d)), inner=i, outer=o) for (d, i, o) in
-            zip(φ.dimensions, inners, outers)]...)
-end
-
-"""
-    pattern_states(φ::Factor, [dim])
-
-Returns the states of `dim`, given its current position in φ.
-"""
-pattern_states(φ::Factor, dim::Symbol) =
-    getdim(φ, dim)[pattern(φ, dims)]
-
-function pattern_states(φ::Factor, dims::Vector{Symbol})
-    dims = getdim(φ, dims)
-    pat = pattern(φ, dims)
-
-    return hcat([d[pat[:, i]] for (i, d) in enumerate(dims)]...)
-end
-
-function pattern_states(φ::Factor)
-    pat = pattern(φ)
-
-    return hcat([d[pat[:, i]] for (i, d) in enumerate(φ.dimensions)]...)
-end
-
 """
 Appends a new dimension to a Factor
 """
@@ -224,13 +159,4 @@ function Base.push!(φ::Factor, dim::Dimension)
 
     return φ
 end
-
-function Base.permutedims!(φ::Factor, perm)
-    φ.potential = permutedims(φ.potential, perm)
-    φ.dimensions = φ.dimensions[perm]
-
-    return φ
-end
-
-Base.permutedims(φ::Factor, perm) = permutedims!(deepcopy(φ), perm)
 

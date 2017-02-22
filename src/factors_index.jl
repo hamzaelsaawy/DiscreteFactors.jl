@@ -1,5 +1,5 @@
 #
-# Factors Access
+# Factors Indexing
 #
 # For ft[:A] syntax and such
 
@@ -9,6 +9,8 @@ Base.getindex(ft::Factor, dims::Vector{Symbol}) = getdim(ft, dims)
 Base.getindex(ft::Factor, ::Colon) = ft.dimensions
 
 # TODO setindex for ft[dim]
+# TODO (:X => ...) to (5, ...)
+# TODO ft[:X=> ...]
 
 # Index by number gets that ind
 Base.getindex(ft::Factor, i::Int) = ft.v[i]

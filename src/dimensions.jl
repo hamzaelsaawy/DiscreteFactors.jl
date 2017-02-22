@@ -40,9 +40,6 @@ Create a dimension whose support ranges from `1` to `length`.
 Dimension(name::Symbol, length::Int) = Dimension(name, Base.OneTo(length))
 
 typealias RangeDimension{T<:Range} Dimension{T}
-typealias StepDimension{T, S} RangeDimension{StepRange{T, S}}
-typealias UnitDimension{T<:Real} RangeDimension{UnitRange{T}}
-typealias CartesianDimension{T<:Integer} RangeDimension{Base.OneTo{T}}
 
 ###############################################################################
 #                   Basic Functions
@@ -93,7 +90,16 @@ Base.next(d::Dimension, i) = next(support(d), i)
 
 Base.done(d::Dimension, i) = done(support(d), i)
 
-Base.eltype(d::Dimension) = d |> support |> eltype
+Base.eltype{T<:AbstractVector}(::Type{Dimension{T}}) = eltype(T)
+
+"""
+    spttype(::Type{Dimension})
+    spttype(::Dimension)
+
+Determine the type of the support. (E.g. `Vector{Char}` or `StepRange{Int64}`.)
+"""
+spttype{T<:AbstractVector}(::Type{Dimension{T}}) = T
+spttype(d::Dimension) = valtype(typeof(d))
 
 ###############################################################################
 #                   Indexing

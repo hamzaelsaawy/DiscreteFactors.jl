@@ -1,8 +1,48 @@
 #
-# Factors Reduce
+# Factors Dimensions/Reduce
 #
 # Dimension specific things, like broadcast, reduce, sum, etc.
-# Functions (should) leave ft the same if dim ∉ ft
+
+Base.in(d::Dimension, φ::Factor) = d in scope(φ)
+Base.in(d::Symbol, φ::Factor) = d in names(φ)
+
+"""
+    indexin(dims, φ::Factor)
+
+Find index of dimension `dims` in `φ`. Return 0 if not in `φ`.
+"""
+Base.indexin(dim::Symbol, φ::Factor) = findnext(names(φ), dim, 1)
+Base.indexin(dims::Vector{Symbol}, φ::Factor) = indexin(dims, names(φ))
+
+"""
+    getdim(φ::Factor, dim::Symbol)
+    getdim(φ::Factor, dims::Vector{Symbol})
+
+Get the dimension with name `dim` in `φ`.
+"""
+@inline function getdim(φ::Factor, dim::Symbol)
+    i = indexin(dim, φ)
+
+    (i == 0) && not_in_factor_error(dim)
+
+    return φ.dimensions[i]
+end
+
+@inline function getdim(φ::Factor, dims::Vector{Symbol})
+    _check_dims_valid(dims, φ)
+
+    inds = indexin(dims, φ)
+    return φ.dimensions[inds]
+end
+
+function Base.permutedims!(φ::Factor, perm)
+    φ.potential = permutedims(φ.potential, perm)
+    φ.dimensions = φ.dimensions[perm]
+
+    return φ
+end
+
+Base.permutedims(φ::Factor, perm) = permutedims!(deepcopy(φ), perm)
 
 # opt for a more efficient version than reducedim!(deepcopy(ft))
 """
@@ -74,6 +114,13 @@ function reducedim!{D<:Dimension, V<:Number}(op, ft::Factor{D, V}, dims,
 
     return ft
 end
+
+"""
+    Z(φ::Factor)
+
+Return the partition function.
+"""
+Z(ft::Factor) = reducedim(+, ft, names(ft))
 
 Base.sum(ft::Factor, dims) = reducedim(+, ft, dims)
 Base.sum!(ft::Factor, dims) = reducedim!(+, ft, dims)
@@ -226,21 +273,4 @@ end
 
 
 *(ft1, ft2) = join(*, ft1, ft2)
-
-"""
-A version of repeate that only repeates a matrix through higer dimensions dims
-"""
-function duplicate(A::Array, dims::Base.Dims)
-    size_in = size(A)
-    length_in = length(A)
-    size_out = (size_in..., dims...)::Dims
-
-    B = similar(A, size_out)
-
-    for index in 1:prod(dims)
-        copy!(B, (index - 1) * length_in + 1, A, 1, length_in)
-    end
-
-    return B
-end
 
