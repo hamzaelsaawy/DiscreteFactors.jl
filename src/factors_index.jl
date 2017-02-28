@@ -6,20 +6,20 @@
 # Column access (ft[:A]) returns the dimension for comparisons and stuff
 Base.getindex(ft::Factor, dim::Symbol) = getdim(ft, dim)
 Base.getindex(ft::Factor, dims::Vector{Symbol}) = getdim(ft, dims)
-Base.getindex(ft::Factor, ::Colon) = ft.dimensions
 
 # TODO setindex for ft[dim]
 # TODO (:X => ...) to (5, ...)
 # TODO ft[:X=> ...]
+# TODO ft[:]
 
 # Index by number gets that ind
-Base.getindex(ft::Factor, i::Int) = ft.v[i]
-Base.getindex(ft::Factor, I::Vararg{Int}) = ft.v[I]
+#Base.getindex(ft::Factor, i::Int) = ft.v[i]
+#Base.getindex(ft::Factor, I::Vararg{Int}) = ft.v[I]
 
-"""
-Get values with dimensions consistent with an assignment. 
-Colons select entire dimension
-"""
+function Base.getindex(ft::Factor, Is::Pair{Symbol}...)
+    
+end
+
 function Base.getindex(ft::Factor, a::Assignment)
     return ft.v[_translate_index(ft, a)...]
 end
@@ -60,4 +60,3 @@ end
 
 Base.sub2ind(ft::Factor, i...) = sub2ind(size(ft), i...)
 Base.ind2sub(ft::Factor, i) = ind2sub(size(ft), i)
-

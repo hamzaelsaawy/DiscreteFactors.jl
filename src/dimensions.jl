@@ -8,7 +8,7 @@
 
 A dimesnion ... does what ???
 """
-type Dimension{T<:AbstractVector} # <: AbstractVector
+type Dimension{T<:AbstractVector} # {T, C<: AbstractVector{T}} <: AbstractVector{T} for Julia0.6
     name::Symbol
     support::T
 
@@ -23,14 +23,14 @@ end
 Dimension{T<:AbstractVector}(name::Symbol, support::T) =
     Dimension{T}(name, support)
 
-Dimension(name::Symbol, support::Tuple) =
-    Dimension(name, [promote(support...)...])
+# promotion is automatic for arrays
+Dimension(name::Symbol, support::Tuple) = Dimension(name, [support...])
 
 # swap out unit ranges with OneTo
 Dimension{V<:Integer}(name::Symbol, support::UnitRange{V}) =
     (first(support) == 1 && last(support) > 0) ?
-        Dimension{Base.OneTo{V}}(name, Base.OneTo(length(support))) :
-        Dimension{typeof(support)}(name, support)
+            Dimension{Base.OneTo{V}}(name, Base.OneTo(length(support))) :
+            Dimension{typeof(support)}(name, support)
 
 """
     Dimension(name::Symbol, length::Integer)
@@ -41,8 +41,8 @@ Dimension(name::Symbol, length::Int) = Dimension(name, Base.OneTo(length))
 
 typealias RangeDimension{T<:Range} Dimension{T}
 
-###############################################################################
-#                   Basic Functions
+####################################################################################################
+#                                   Basic Functions
 
 # genaric name and value
 """
@@ -81,8 +81,8 @@ maximum(d::Dimension) = d |> support |> maximum
 Base.step(d::RangeDimension) = d |> support |> step
 
 
-###############################################################################
-#                   Iterating
+####################################################################################################
+#                                   Iterating
 
 Base.start(d::Dimension) = d |> support |> start
 
@@ -99,10 +99,10 @@ Base.eltype{T<:AbstractVector}(::Type{Dimension{T}}) = eltype(T)
 Determine the type of the support. (E.g. `Vector{Char}` or `StepRange{Int64}`.)
 """
 spttype{T<:AbstractVector}(::Type{Dimension{T}}) = T
-spttype(d::Dimension) = valtype(typeof(d))
+spttype(d::Dimension) = spttype(typeof(d))
 
-###############################################################################
-#                   Indexing
+####################################################################################################
+#                                   Indexing
 
 Base.getindex(d::Dimension, I) = getindex(values(d), I)
 
@@ -133,12 +133,13 @@ Return the indicies of `I` in `d` and an updated dimension using `I`.
 `I` is either an array of states found in `dm` or a logical index.
 """
 @inline function update(d::Dimension, I)
-    _check_values_valid(I, d)
+    @boundscheck _check_values_valid(I, d)
 
     return _update(d, indexin(I, d))
 end
 
 update(d::Dimension, I::AbstractVector{Bool}) = _update(d, Base.to_index(I))
+update(d::Dimension, ::Colon) = (:, d)
 
 # given the index
 _update(d::Dimension, ind::Int) = (ind, nothing)
@@ -148,8 +149,8 @@ function _update(d::Dimension, inds::Vector{Int})
     return(inds, new_d)
 end
 
-###############################################################################
-#                   Comparisons and Equality
+####################################################################################################
+#                                   Comparisons and Equality
 
 ==(d1::Dimension, d2::Dimension) =
     (name(d1) == name(d2)) &&
@@ -202,4 +203,3 @@ end
 
     return ind
 end
-

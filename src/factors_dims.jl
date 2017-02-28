@@ -3,54 +3,53 @@
 #
 # Dimension specific things, like broadcast, reduce, sum, etc.
 
-Base.in(d::Dimension, φ::Factor) = d in scope(φ)
-Base.in(d::Symbol, φ::Factor) = d in names(φ)
+Base.in(d::Dimension, ϕ::Factor) = d in scope(ϕ)
+Base.in(d::Symbol, ϕ::Factor) = d in names(ϕ)
 
 """
-    indexin(dims, φ::Factor)
+    indexin(dims, ϕ::Factor)
 
-Find index of dimension `dims` in `φ`. Return 0 if not in `φ`.
+Find index of dimension `dims` in `ϕ`. Return 0 if not in `ϕ`.
 """
-Base.indexin(dim::Symbol, φ::Factor) = findnext(names(φ), dim, 1)
-Base.indexin(dims::Vector{Symbol}, φ::Factor) = indexin(dims, names(φ))
+Base.indexin(dim::Symbol, ϕ::Factor) = findnext(names(ϕ), dim, 1)
+Base.indexin(dims::Vector{Symbol}, ϕ::Factor) = indexin(dims, names(ϕ))
 
 """
-    getdim(φ::Factor, dim::Symbol)
-    getdim(φ::Factor, dims::Vector{Symbol})
+    getdim(ϕ::Factor, dim::Symbol)
+    getdim(ϕ::Factor, dims::Vector{Symbol})
 
-Get the dimension with name `dim` in `φ`.
+Get the dimension with name `dim` in `ϕ`.
 """
-@inline function getdim(φ::Factor, dim::Symbol)
-    i = indexin(dim, φ)
+@inline function getdim(ϕ::Factor, dim::Symbol)
+    i = indexin(dim, ϕ)
 
     (i == 0) && not_in_factor_error(dim)
 
-    return φ.dimensions[i]
+    return ϕ.dimensions[i]
 end
 
-@inline function getdim(φ::Factor, dims::Vector{Symbol})
-    _check_dims_valid(dims, φ)
+@inline function getdim(ϕ::Factor, dims::Vector{Symbol})
+    _check_dims_valid(dims, ϕ)
 
-    inds = indexin(dims, φ)
-    return φ.dimensions[inds]
+    inds = indexin(dims, ϕ)
+    return ϕ.dimensions[inds]
 end
 
-function Base.permutedims!(φ::Factor, perm)
-    φ.potential = permutedims(φ.potential, perm)
-    φ.dimensions = φ.dimensions[perm]
+function Base.permutedims!(ϕ::Factor, perm)
+    ϕ.potential = permutedims(ϕ.potential, perm)
+    ϕ.dimensions = ϕ.dimensions[perm]
 
-    return φ
+    return ϕ
 end
 
-Base.permutedims(φ::Factor, perm) = permutedims!(deepcopy(φ), perm)
+Base.permutedims(ϕ::Factor, perm) = permutedims!(deepcopy(ϕ), perm)
 
 # opt for a more efficient version than reducedim!(deepcopy(ft))
 """
 Reduces a dimension in `ft` using function `op`.
 See Base.reducedim for more details
 """
-function Base.reducedim{D<:Dimension, V<:Number}(op, ft::Factor{D, V},
-        dims, v0=nothing)
+function Base.reducedim{D<:Dimension, V<:Number}(op, ft::Factor{D, V}, dims, v0=nothing)
     if isa(dims, Symbol)
         dims = [dims]
     elseif isa(dims, Vector{Symbol})
@@ -84,8 +83,7 @@ function Base.reducedim{D<:Dimension, V<:Number}(op, ft::Factor{D, V},
     return ft
 end
 
-function reducedim!{D<:Dimension, V<:Number}(op, ft::Factor{D, V}, dims,
-        v0=nothing)
+function reducedim!{D<:Dimension, V<:Number}(op, ft::Factor{D, V}, dims, v0=nothing)
     if isa(dims, Symbol)
         dims = [dims]
     elseif isa(dims, Vector{Symbol})
@@ -116,7 +114,7 @@ function reducedim!{D<:Dimension, V<:Number}(op, ft::Factor{D, V}, dims,
 end
 
 """
-    Z(φ::Factor)
+    Z(ϕ::Factor)
 
 Return the partition function.
 """
@@ -141,8 +139,7 @@ a vector across multiple dimensions
 
 See Base.broadcast for more info.
 """
-Base.broadcast(f, ft::Factor, dims, values) =
-    broadcast!(f, deepcopy(ft), dims, values)
+Base.broadcast(f, ft::Factor, dims, values) = broadcast!(f, deepcopy(ft), dims, values)
 
 
 """
@@ -273,4 +270,3 @@ end
 
 
 *(ft1, ft2) = join(*, ft1, ft2)
-

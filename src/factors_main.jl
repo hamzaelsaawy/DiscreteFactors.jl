@@ -22,11 +22,10 @@ type Factor{D<:Dimension}
 
         (length(dimensions) == ndims(potential)) || not_enough_dims_error()
 
-        ([size(potential)...] == [length(d) for d in dimensions]) ||
-                invalid_dim_sizes()
+        ([size(potential)...] == [length(d) for d in dimensions]) || invalid_dim_sizes()
 
         (:potential in map(name, dimensions)) &&
-            warn("having a dimension called `potential` will cause problems")
+                warn("having a dimension called `potential` will cause problems")
 
         _check_negatives(potential)
 
@@ -34,24 +33,23 @@ type Factor{D<:Dimension}
     end
 end
 
-#                   Default Outer Constructors
+####################################################################################################
+#                                   Constructors
+
+#                                   Default Constructors
 # convert from ints and other reals to floats
-Factor{D<:Dimension, V<:Real}(dims::AbstractVector{D},
-        potential::AbstractArray{V}) =
-    Factor{D}(collect(dims), float(potential))
+Factor{D<:Dimension, V<:Real}(dims::AbstractVector{D}, potential::AbstractArray{V}) =
+        Factor{D}(collect(dims), float(potential))
 
 # when it actually is floats, avoid (potential) overhead of float() call
-Factor{D<:Dimension}(dims::AbstractVector{D},
-        potential::AbstractArray{Float64}) =
-    Factor{D}(collect(dims), potential)
+Factor{D<:Dimension}(dims::AbstractVector{D}, potential::AbstractArray{Float64}) =
+        Factor{D}(collect(dims), potential)
 
-Factor{V<:Real}(dim::Dimension, potential::AbstractVector{V}) =
-    Factor([dim], potential)
+Factor{V<:Real}(dim::Dimension, potential::AbstractVector{V}) = Factor([dim], potential)
 
 #                   Symbols and Potential
 # symbol names and potential
-Factor{V<:Real}(dim::Symbol, potential::AbstractVector{V}) =
-    Factor([dim], potential)
+Factor{V<:Real}(dim::Symbol, potential::AbstractVector{V}) = Factor([dim], potential)
 
 function Factor{V<:Real}(dims::AbstractVector{Symbol}, potential::Array{V})
     (length(dims) == ndims(potential)) || not_enough_dims_error()
@@ -90,18 +88,21 @@ ranges, or arrays.
 """
 function Factor(dims::Dict{Symbol})
     new_dims = [Dimension(name, state) for (name, state) in dims]
-    Factor(new_dims)
+
+    return Factor(new_dims)
 end
 
 # this way, its order preserving ... if it matters
 function Factor(dims::Pair{Symbol}...)
     new_dims = [Dimension(n, a) for (n, a) in dims]
-    Factor(new_dims)
+
+    return Factor(new_dims)
 end
 
 function Factor{V<:Real}(potential::AbstractArray{V}, dims::Pair{Symbol}...)
     new_dims = [Dimension(n, a) for (n, a) in dims]
-    Factor(new_dims, potential)
+
+    return Factor(new_dims, potential)
 end
 
 """
@@ -111,52 +112,48 @@ Create a zero-dimensional Factor.
 """
 Factor(potential::Real) = Factor(Dimension[], squeeze(Float64[potential], 1))
 
-###############################################################################
-#                   Methods
+####################################################################################################
+#                                   Methods
 
 Base.eltype(::Factor) = Float64
 
 """
-    names(φ::Factor)
+    names(ϕ::Factor)
 
-Get an array of the names of the dimensions of `φ`.
+Get an array of the names (symbols) of the dimensions of `ϕ`.
 """
-Base.names(φ::Factor) = map(name, φ.dimensions)
-
-"""
-    scope(φ)
-
-Get the dimensions of `φ`.
-"""
-scope(φ::Factor) = φ.dimensions
-
-Base.ndims(φ::Factor) = ndims(φ.potential)
+Base.names(ϕ::Factor) = map(name, ϕ.dimensions)
 
 """
-    size(φ, [dims...])
+    scope(ϕ)
 
-Return a tuple of the dimensions of `φ`.
+Get the dimensions of `ϕ`.
 """
-Base.size(φ::Factor) = size(φ.potential)
-Base.size(φ::Factor, dim::Symbol) = size(φ.potential, indexin(dim, φ))
-Base.size{N}(φ::Factor, dims::Vararg{Symbol, N}) =
-    ntuple(k -> size(φ, dims[k]), Val{N})
+scope(ϕ::Factor) = ϕ.dimensions
 
-Base.length(φ::Factor) = length(φ.potential)
-Base.length(φ::Factor, dim::Symbol) = length(getdim(φ, dim))
-Base.length(φ::Factor, dims::Vector{Symbol}) = [length(φ, dim) for dim in dims]
+Base.ndims(ϕ::Factor) = ndims(ϕ.potential)
+
+"""
+    size(ϕ, [dims...])
+
+Return a tuple of the dimensions of `ϕ`.
+"""
+Base.size(ϕ::Factor) = size(ϕ.potential)
+Base.size(ϕ::Factor, dim::Symbol) = size(ϕ.potential, indexin(dim, ϕ))
+Base.size{N}(ϕ::Factor, dims::Vararg{Symbol, N}) = ntuple(k -> size(ϕ, dims[k]), Val{N})
+
+Base.length(ϕ::Factor) = length(ϕ.potential)
+Base.length(ϕ::Factor, dim::Symbol) = length(getdim(ϕ, dim))
+Base.length(ϕ::Factor, dims::Vector{Symbol}) = [length(ϕ, dim) for dim in dims]
 
 """
 Appends a new dimension to a Factor
 """
-function Base.push!(φ::Factor, dim::Dimension)
-    if name(dim) in names(φ)
-        error("Dimension $(name(dim)) already exists")
-    end
+function Base.push!(ϕ::Factor, dim::Dimension)
+    (name(dim) in names(ϕ)) && error("Dimension $(name(dim)) already exists")
 
-    φ.dimensions = push!(Vector{Dimension}(φ.dimensions), dim)
-    φ.potential = duplicate(φ.potential, length(dim))
+    ϕ.dimensions = push!(Vector{Dimension}(ϕ.dimensions), dim)
+    ϕ.potential = duplicate(ϕ.potential, length(dim))
 
-    return φ
+    return ϕ
 end
-

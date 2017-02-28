@@ -4,52 +4,51 @@
 # Iterating over indices, potential, etc.
 
 """
-    pattern(φ::Factor, [dim])
+    pattern(ϕ::Factor, [dim])
 
-Return the index of the states of `dim`, given its current position in φ.
+Return the index of the states of `dim`, given its current position in ϕ.
 """
-pattern(φ::Factor, dim::Symbol) = pattern(φ, [dim])
-function pattern(φ::Factor, dims::Vector{Symbol})
-    _check_dims_valid(dims, φ)
+pattern(ϕ::Factor, dim::Symbol) = pattern(ϕ, [dim])
 
-    inds = indexin(dims, φ)
-    lens = Int[size(φ)...]
+function pattern(ϕ::Factor, dims::Vector{Symbol})
+    _check_dims_valid(dims, ϕ)
+
+    inds = indexin(dims, ϕ)
+    lens = Int[size(ϕ)...]
 
     inners = vcat(1, cumprod(lens[1:(end-1)]))
-    outers = Vector{Int}(length(φ) ./ lens[inds] ./ inners[inds])
+    outers = Vector{Int}(length(ϕ) ./ lens[inds] ./ inners[inds])
 
-    hcat([repeat(Vector(1:length(d)), inner=i, outer=o) for (d, i, o) in
-            zip(φ.dimensions[inds], inners[inds], outers)]...)
+    return hcat([repeat(Vector(1:length(d)), inner=i, outer=o) for (d, i, o) in
+            zip(ϕ.dimensions[inds], inners[inds], outers)]...)
 end
 
-function pattern(φ::Factor)
-    lens = Int[size(φ)...]
+function pattern(ϕ::Factor)
+    lens = Int[size(ϕ)...]
 
     inners = vcat(1, cumprod(lens[1:(end-1)]))
-    outers = Vector{Int}(length(φ) ./ lens ./ inners)
+    outers = Vector{Int}(length(ϕ) ./ lens ./ inners)
 
-    hcat([repeat(Vector(1:length(d)), inner=i, outer=o) for (d, i, o) in
-            zip(φ.dimensions, inners, outers)]...)
+    return hcat([repeat(Vector(1:length(d)), inner=i, outer=o) for (d, i, o) in
+            zip(ϕ.dimensions, inners, outers)]...)
 end
 
 """
-    pattern_states(φ::Factor, [dim])
+    pattern_states(ϕ::Factor, [dim])
 
-Returns the states of `dim`, given its current position in φ.
+Returns the states of `dim`, given its current position in ϕ.
 """
-pattern_states(φ::Factor, dim::Symbol) =
-    getdim(φ, dim)[pattern(φ, dims)]
+pattern_states(ϕ::Factor, dim::Symbol) = getdim(ϕ, dim)[pattern(ϕ, dims)]
 
-function pattern_states(φ::Factor, dims::Vector{Symbol})
-    dims = getdim(φ, dims)
-    pat = pattern(φ, dims)
+function pattern_states(ϕ::Factor, dims::Vector{Symbol})
+    dims = getdim(ϕ, dims)
+    pat = pattern(ϕ, dims)
 
     return hcat([d[pat[:, i]] for (i, d) in enumerate(dims)]...)
 end
 
-function pattern_states(φ::Factor)
-    pat = pattern(φ)
+function pattern_states(ϕ::Factor)
+    pat = pattern(ϕ)
 
-    return hcat([d[pat[:, i]] for (i, d) in enumerate(φ.dimensions)]...)
+    return hcat([d[pat[:, i]] for (i, d) in enumerate(ϕ.dimensions)]...)
 end
-
