@@ -14,7 +14,8 @@ type Dimension{T<:AbstractVector} # {T, C<: AbstractVector{T}} <: AbstractVector
 
     function Dimension(name::Symbol, support::T)
         isa(support, Range) || allunique(support) || non_unique_support_error()
-        _check_singleton(support)
+        # now allowing empty dimensions :/
+        #_check_singleton(support)
 
         new(name, support)
     end
@@ -68,6 +69,8 @@ support(d::Dimension) = d |> values
 
 Base.length(d::Dimension) = d |> support |> length
 
+Base.isempty(d::Dimension) = d |> support |> isempty
+
 Base.size(d::Dimension) = d |> support |> size
 
 Base.first(d::Dimension) = d |> support |> first
@@ -80,6 +83,7 @@ maximum(d::Dimension) = d |> support |> maximum
 
 Base.step(d::RangeDimension) = d |> support |> step
 
+Base.copy(d::Dimension) = d # dimensions are immutable
 
 ####################################################################################################
 #                                   Iterating
@@ -142,12 +146,8 @@ update(d::Dimension, I::AbstractVector{Bool}) = _update(d, Base.to_index(I))
 update(d::Dimension, ::Colon) = (:, d)
 
 # given the index
-_update(d::Dimension, ind::Int) = (ind, nothing)
-function _update(d::Dimension, inds::Vector{Int})
-    new_d = Dimension(name(d), d[inds])
-
-    return(inds, new_d)
-end
+_update(d::Dimension, ind::Int) = (ind, Dimension(name(d), []))
+_update(d::Dimension, inds::Vector{Int}) = (inds, Dimension(name(d), d[inds]))
 
 ####################################################################################################
 #                                   Comparisons and Equality

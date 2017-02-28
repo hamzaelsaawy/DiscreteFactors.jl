@@ -12,22 +12,21 @@
 Create a Factor with scope `dims` and potential `potential` (or a zero
 potential).
 """
-type Factor{D<:Dimension}
-    dimensions::Vector{D}
+type Factor{N}
+    dimensions::Vector{Dimension}
     # the value mapped to each instance
-    potential::Array{Float64}
+    potential::Array{Float64, N}
 
-    function Factor(dimensions::Vector{D}, potential::Array)
+    function Factor(dimensions::Vector{Dimension}, potential::Array{Float64, N})
         _check_dims_unique(dimensions)
+        _check_dims_singleton(dimensions)
+        _check_negatives(potential)
 
         (length(dimensions) == ndims(potential)) || not_enough_dims_error()
-
         ([size(potential)...] == [length(d) for d in dimensions]) || invalid_dim_sizes()
 
         (:potential in map(name, dimensions)) &&
                 warn("having a dimension called `potential` will cause problems")
-
-        _check_negatives(potential)
 
         return new(dimensions, potential)
     end
@@ -38,12 +37,12 @@ end
 
 #                                   Default Constructors
 # convert from ints and other reals to floats
-Factor{D<:Dimension, V<:Real}(dims::AbstractVector{D}, potential::AbstractArray{V}) =
-        Factor{D}(collect(dims), float(potential))
+Factor{V<:Real, N}(dims::AbstractVector{Dimension}, potential::AbstractArray{V, N}) =
+        Factor{N}(collect(dims), float(potential))
 
 # when it actually is floats, avoid (potential) overhead of float() call
-Factor{D<:Dimension}(dims::AbstractVector{D}, potential::AbstractArray{Float64}) =
-        Factor{D}(collect(dims), potential)
+Factor{N}(dims::AbstractVector{Dimension}, potential::AbstractArray{Float64, N}) =
+        Factor{N}(collect(dims), potential)
 
 Factor{V<:Real}(dim::Dimension, potential::AbstractVector{V}) = Factor([dim], potential)
 
@@ -64,13 +63,13 @@ end
 Create a factor with a potential initialized to `value`.
 Use `value=nothing` for an unitialized potential
 """
-function Factor{D<:Dimension}(dims::AbstractVector{D}, value::Real=0)
+function Factor(dims::AbstractVector{Dimension}, value::Real=0)
     potential = fill(float(value), map(length, dims)...)
 
     return Factor(dims, potential)
 end
 
-function Factor{D<:Dimension}(dims::AbstractVector{D}, ::Void)
+function Factor(dims::AbstractVector{Dimension}, ::Void)
     potential = Array{Float64}(map(length, dims)...)
 
     return Factor(dims, potential)
@@ -123,6 +122,13 @@ Base.eltype(::Factor) = Float64
 Get an array of the names (symbols) of the dimensions of `ϕ`.
 """
 Base.names(ϕ::Factor) = map(name, ϕ.dimensions)
+
+"""
+    potential(ϕ::Factor)
+
+Get the potential of a Factor.
+"""
+potential(ϕ::Factor) = ϕ.potential
 
 """
     scope(ϕ)

@@ -37,6 +37,7 @@ export
 
     Factor,
     scope,
+    potential,
     lengths,
     getdim,
     pattern,
@@ -65,4 +66,3 @@ include("auxiliary.jl")
 include("errors.jl")
 
 end # module
-

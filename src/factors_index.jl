@@ -1,62 +1,69 @@
 #
 # Factors Indexing
 #
-# For ft[:A] syntax and such
+# For ϕ[:A] syntax and such
 
-# Column access (ft[:A]) returns the dimension for comparisons and stuff
-Base.getindex(ft::Factor, dim::Symbol) = getdim(ft, dim)
-Base.getindex(ft::Factor, dims::Vector{Symbol}) = getdim(ft, dims)
+# Column access (ϕ[:A]) returns the dimension for comparisons and stuff
+Base.getindex(ϕ::Factor, dim::Symbol) = getdim(ϕ, dim)
+Base.getindex(ϕ::Factor, dims::Vector{Symbol}) = getdim(ϕ, dims)
 
-# TODO setindex for ft[dim]
+# TODO setindex for ϕ[dim]
 # TODO (:X => ...) to (5, ...)
-# TODO ft[:X=> ...]
-# TODO ft[:]
+# TODO ϕ[:X=> ...]
+# TODO ϕ[:]
 
 # Index by number gets that ind
-#Base.getindex(ft::Factor, i::Int) = ft.v[i]
-#Base.getindex(ft::Factor, I::Vararg{Int}) = ft.v[I]
+#Base.getindex(ϕ::Factor, i::Int) = ϕ.v[i]
+#Base.getindex(ϕ::Factor, I::Vararg{Int}) = ϕ.v[I]
 
-function Base.getindex(ft::Factor, Is::Pair{Symbol}...)
-    
+Base.getindex(ϕ::Factor, Is::Pair{Symbol}...) = ϕ[Assignment(Is...)]
+function Base.getindex(ϕ::Factor, a::Assignment)
+    (I, dims) = _translate_index(ϕ, a)
+    return Factor(dims, ϕ.potential[I])
 end
 
-function Base.getindex(ft::Factor, a::Assignment)
-    return ft.v[_translate_index(ft, a)...]
+Base.setindex!(ϕ::Factor, v, Is::Pair{Symbol}...) = setindex!(ϕ, v, Assignment(Is...))
+function Base.setindex!(ϕ::Factor, v, a::Assignment)
+    return ϕ.potential[sub2ind(a)] = v
 end
 
-function Base.setindex!(ft::Factor, v, a::Assignment)
-    return ft.v[_translate_index(ft, a)...] = v
-end
-
-function _translate_index(ft::Factor, a::Assignment)
-    ind = Array{Any}(ndims(ft))
+function _translate_index(ϕ::Factor, a::Assignment)
+    ind = Array{Any}(ndims(ϕ))
     # all dimensions are accessed by default
     ind[:] = Colon()
 
-    for (i, dim) in enumerate(ft.dimensions)
-        if haskey(a, dim.name)
-            val = a[dim.name]
-
-            if isa(val, BitArray)
-                length(dim) == length(val) || throw(ArgumentError("Length " *
-                            "of BitArray does not match dimension $(dim.name)"))
-                ind[i] = val
-            else
-                # index in each dimension is location of value
-                ind[i] = indexin(val, dim)
-
-                if any(ind[i] .== 0)
-                    # if assignment[d] is not valid,shortcircuit and
-                    #  return an empty array
-                    return []
-                end
-            end
+    I = Array{Any}(ndims(ϕ))
+    I[:] = Colon()
+    dims = copy(scope(ϕ))
+    for (i, d) in enumerate(scope(ϕ))
+        n = name(d)
+        if haskey(a, n)
+            (ind, new_d) = update(d, a[n])
+            I[i] = ind
+            dims[i] = new_d
         end
     end
 
-    return ind
+    dims = filter(d -> ~isempty(d), dims)
+    return (I, dims)
 end
 
+"""
+    sub2ind(ϕ::Factor, a::Assignment)
 
-Base.sub2ind(ft::Factor, i...) = sub2ind(size(ft), i...)
-Base.ind2sub(ft::Factor, i) = ind2sub(size(ft), i)
+Return the index of the assignment.
+"""
+function Base.sub2ind(ϕ::Factor, a::Assignment)
+    (I, _) = _translate_index(ϕ, a)
+    return I
+end
+
+"""
+    ind2sub(ϕ::Factor, i::Int)
+
+Returns the assignment corresponding to index `i`.
+"""
+function Base.ind2sub{N}(ϕ::Factor{N}, i)
+    I = ind2sub(size(ϕ), i)
+    return ntuple(k -> ϕ.dimensions[k][sb[k]], Val{N})
+end

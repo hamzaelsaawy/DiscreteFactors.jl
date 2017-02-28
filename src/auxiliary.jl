@@ -3,48 +3,53 @@
 #
 # Not exactly related, but not exactly not
 
-typealias Assignment{T<:Any} Dict{Symbol, T}
+typealias Assignment Dict{Symbol, Any}
 
-# dimensions need at least 1 value
-_check_singleton(support) = (length(support) > 0) || empty_support_error()
-
-# dims are unique
-_check_dims_unique{D<:Dimension}(dims::Vector{D}) =
-    (length(dims) == 0) || _check_dims_unique(map(name, dims))
-
-_check_dims_unique(dims::Vector{Symbol}) =
-    allunique(dims) || non_unique_dims_error()
-
-# make sure all dims are valid (in φ)
-_check_dims_valid(dim::Symbol, φ::Factor) =
-    (dim in φ) || not_in_factor_error(dim, φ)
-
-@inline function _check_dims_valid(dims::Vector{Symbol}, ϕ::Factor)
-    isempty(dims) && return
-
-    dim = first(dims)
-    (dim in ϕ) || not_in_factor_error(dim, φ)
-
-    return _check_dims_valid(dims[2:end], ϕ)
-end
+####################################################################################################
+#                                   Dimensions
 
 # make sure all the values are valid (in d)
 _check_values_valid(v, d::Dimension) = (v in d) || not_in_dimension_error(v, d)
 
 @inline function _check_values_valid(vs::AbstractArray, d::Dimension)
-    isempty(vs) && return
-
-    v = first(vs)
-    (v in d) || not_in_dimension_error(v, d)
-
-    return _check_values_valid(vs[2:end], d)
+    for v in vs
+        (v in d) || not_in_dimension_error(v, d)
+    end
 end
+
+####################################################################################################
+#                                   Factors
+
+# dims are unique
+_check_dims_unique(dims::Vector{Dimension}) =
+    (length(dims) == 0) || _check_dims_unique(map(name, dims))
+
+_check_dims_unique(dims::Vector{Symbol}) = allunique(dims) || non_unique_dims_error()
+
+# dimensions need at least 1 value
+_check_dims_singleton(d::Dimension) = isempty(d) && empty_support_error(d)
+
+@inline function _check_dims_singleton(dims::Vector{Dimension})
+    for d in dims
+        isempty(d) && empty_support_error(d)
+    end
+end
+
+# make sure all dims are valid (in φ)
+_check_dims_valid(d::Symbol, φ::Factor) = (d in φ) || not_in_factor_error(dim, φ)
+
+@inline function _check_dims_valid(dims::Vector{Symbol}, ϕ::Factor)
+    for d in dims
+        (d in ϕ) || not_in_factor_error(d, φ)
+    end
+end
+
 """
     duplicate(A, dims)
 
 Repeates an array only through higer dimensions `dims`.
 
-Custom version of repeate, but only outer repetition, and only duplicates
+Custom version of `Base.repeat`, but only outer repetition, and only duplicates
 the array for the number of times specified in `dims` for dimensions greater
 than `ndims(A)`. If `dims` is empty, returns a copy of `A`.
 
@@ -85,4 +90,3 @@ function duplicate(A::Array, dims::Dims)
 
     return B
 end
-

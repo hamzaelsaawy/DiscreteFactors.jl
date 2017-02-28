@@ -3,7 +3,7 @@
 #
 # All the errors that can be thrown
 
-empty_support_error() = throw(ArgumentError("dimension support is empty"))
+empty_support_error(d::Dimension) = throw(ArgumentError(name(d) * "'s support is empty"))
 
 not_enough_dims_error() = throw(ArgumentError("`potential` must have as " *
             "many dimensions as `dimensions`"))
