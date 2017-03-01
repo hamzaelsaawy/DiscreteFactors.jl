@@ -14,6 +14,7 @@
 # TODO broadcast fallback for empty arrays
 # TODO broadcast_reduce tag-team
 # TODO find a better error type for NegativeError
+# TODO add @boundscheck and @inbounds where applicable
 
 module Factors
 
@@ -44,6 +45,11 @@ export
     pattern_states,
     getdim,
     reducedim!,
+    a2sub,
+    at2sub,
+    sub2a,
+    sub2at,
+
 
     # negatives stuff
     set_negative_mode,
@@ -52,17 +58,21 @@ export
     NegativeWarn,
     NegativeError
 
+# define Dimension
 include("dimensions.jl")
-
+# define Factors
 include("factors_main.jl")
-#include("factors_index.jl")
+# define Assignment
+include("auxiliary.jl")
+
+include("factors_index.jl")
 include("factors_iter.jl")
 #include("factors_dims.jl")
+include("factors_map.jl")
 
 include("negatives.jl")
 include("dataframes.jl")
 include("io.jl")
-include("auxiliary.jl")
 include("errors.jl")
 
 end # module

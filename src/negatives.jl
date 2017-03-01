@@ -10,7 +10,7 @@ const NegativeError = NegativeMode{:error}()
 const NegativeIgnore = NegativeMode{:ignore}()
 
 # I know, this is a really bad idea
-global _hneg = NegativeWarn
+global _hneg = NegativeIgnore
 
 function set_negative_mode(h::NegativeMode)
     global _hneg
@@ -25,7 +25,7 @@ _check_negatives(ft::Factor, h::NegativeMode) = _check_negatives(ft.potential, h
 
 _check_negatives{T<:Real}(p::Array{T}) = _check_negatives(p, _hneg)
 
-_check_negatives(::Array, ::NegativeMode{:ignoring}) = nothing
+_check_negatives(::Array, ::NegativeMode{:ignore}) = nothing
 
 _check_negatives{T<:Real}(p::Array{T}, ::NegativeMode{:warn}) =
     any(p .< 0) && warn("potential has negative values")

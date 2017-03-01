@@ -17,21 +17,25 @@ _check_values_valid(v, d::Dimension) = (v in d) || not_in_dimension_error(v, d)
     end
 end
 
+_check_assignment_singleton(i::Int, ::Symbol) = nothing
+_check_assignment_singleton(::Array, name::Symbol) = nonsingleton_assignment_error(name)
+
+
 ####################################################################################################
 #                                   Factors
 
 # dims are unique
-_check_dims_unique(dims::Vector{Dimension}) =
+_check_dims_unique{D<:Dimension}(dims::Vector{D}) =
     (length(dims) == 0) || _check_dims_unique(map(name, dims))
 
 _check_dims_unique(dims::Vector{Symbol}) = allunique(dims) || non_unique_dims_error()
 
 # dimensions need at least 1 value
-_check_dims_singleton(d::Dimension) = isempty(d) && empty_support_error(d)
+_check_dims_singleton(d::Dimension) = isempty(d) && empty_support_error(name(d))
 
-@inline function _check_dims_singleton(dims::Vector{Dimension})
+@inline function _check_dims_singleton{D<:Dimension}(dims::Vector{D})
     for d in dims
-        isempty(d) && empty_support_error(d)
+        isempty(d) && empty_support_error(name(d))
     end
 end
 

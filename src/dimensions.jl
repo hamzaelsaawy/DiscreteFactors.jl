@@ -137,7 +137,7 @@ Return the indicies of `I` in `d` and an updated dimension using `I`.
 `I` is either an array of states found in `dm` or a logical index.
 """
 @inline function update(d::Dimension, I)
-    @boundscheck _check_values_valid(I, d)
+    _check_values_valid(I, d)
 
     return _update(d, indexin(I, d))
 end
