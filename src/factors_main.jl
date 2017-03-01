@@ -117,6 +117,9 @@ Create a zero-dimensional Factor.
 """
 Factor(potential::Real) = Factor(Dimension[], squeeze(Float64[potential], 1))
 
+#                                   Similar
+Base.similar(ϕ::Factor) = Factor(scope(ϕ), nothing)
+
 ####################################################################################################
 #                                   Methods
 
@@ -154,12 +157,66 @@ Base.size(ϕ::Factor) = size(ϕ.potential)
 Base.size(ϕ::Factor, dim::Symbol) = size(ϕ.potential, indexin(dim, ϕ))
 Base.size{N}(ϕ::Factor, dims::Vararg{Symbol, N}) = ntuple(k -> size(ϕ, dims[k]), Val{N})
 
+"""
+    length(ϕ)
+
+Return thelength of `ϕ`.
+"""
 Base.length(ϕ::Factor) = length(ϕ.potential)
-Base.length(ϕ::Factor, dim::Symbol) = length(getdim(ϕ, dim))
-Base.length(ϕ::Factor, dims::Vector{Symbol}) = [length(ϕ, dim) for dim in dims]
 
 """
-Appends a new dimension to a Factor
+    in(d, ϕ::Factor)
+
+Check if `Dimension` (or `Symbol`) `d` is in `ϕ`.
+"""
+Base.in(d::Dimension, ϕ::Factor) = d in scope(ϕ)
+Base.in(d::Symbol, ϕ::Factor) = d in names(ϕ)
+
+"""
+    indexin(dims, ϕ::Factor)
+
+Find the index of `dims` in `ϕ`. Return 0 if not in `ϕ`.
+"""
+Base.indexin(dim::Symbol, ϕ::Factor) = findnext(names(ϕ), dim, 1)
+Base.indexin(dims::Vector{Symbol}, ϕ::Factor) = indexin(dims, names(ϕ))
+
+Base.indexin(d::Dimension, ϕ::Factor) = findnext(scope(ϕ), dim, 1)
+Base.indexin{D<:Dimension}(dims::AbstractVector{D}, ϕ::Factor) = indexin(dims, scope(ϕ))
+
+"""
+    getdim(ϕ::Factor, dim::Symbol)
+    getdim(ϕ::Factor, dims::Vector{Symbol})
+
+Get the dimension with name `dim` in `ϕ`.
+"""
+@inline function getdim(ϕ::Factor, dim::Symbol)
+    i = indexin(dim, ϕ)
+
+    (i == 0) && not_in_factor_error(dim)
+
+    return ϕ.dimensions[i]
+end
+
+@inline function getdim(ϕ::Factor, dims::Vector{Symbol})
+    _check_dims_valid(dims, ϕ)
+
+    inds = indexin(dims, ϕ)
+    return ϕ.dimensions[inds]
+end
+
+function Base.permutedims!(ϕ::Factor, perm)
+    ϕ.potential = permutedims(ϕ.potential, perm)
+    ϕ.dimensions = ϕ.dimensions[perm]
+
+    return ϕ
+end
+
+Base.permutedims(ϕ::Factor, perm) = permutedims!(deepcopy(ϕ), perm)
+
+"""
+    push(ϕ::Factor, dim::Dimension)
+
+Append a new dimension to a Factor
 """
 function Base.push!(ϕ::Factor, dim::Dimension)
     (name(dim) in names(ϕ)) && error("Dimension $(name(dim)) already exists")

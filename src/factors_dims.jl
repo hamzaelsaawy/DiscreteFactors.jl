@@ -3,47 +3,6 @@
 #
 # Dimension specific things, like broadcast, reduce, sum, etc.
 
-Base.in(d::Dimension, ϕ::Factor) = d in scope(ϕ)
-Base.in(d::Symbol, ϕ::Factor) = d in names(ϕ)
-
-"""
-    indexin(dims, ϕ::Factor)
-
-Find index of dimension `dims` in `ϕ`. Return 0 if not in `ϕ`.
-"""
-Base.indexin(dim::Symbol, ϕ::Factor) = findnext(names(ϕ), dim, 1)
-Base.indexin(dims::Vector{Symbol}, ϕ::Factor) = indexin(dims, names(ϕ))
-
-"""
-    getdim(ϕ::Factor, dim::Symbol)
-    getdim(ϕ::Factor, dims::Vector{Symbol})
-
-Get the dimension with name `dim` in `ϕ`.
-"""
-@inline function getdim(ϕ::Factor, dim::Symbol)
-    i = indexin(dim, ϕ)
-
-    (i == 0) && not_in_factor_error(dim)
-
-    return ϕ.dimensions[i]
-end
-
-@inline function getdim(ϕ::Factor, dims::Vector{Symbol})
-    _check_dims_valid(dims, ϕ)
-
-    inds = indexin(dims, ϕ)
-    return ϕ.dimensions[inds]
-end
-
-function Base.permutedims!(ϕ::Factor, perm)
-    ϕ.potential = permutedims(ϕ.potential, perm)
-    ϕ.dimensions = ϕ.dimensions[perm]
-
-    return ϕ
-end
-
-Base.permutedims(ϕ::Factor, perm) = permutedims!(deepcopy(ϕ), perm)
-
 # opt for a more efficient version than reducedim!(deepcopy(ft))
 """
 Reduces a dimension in `ft` using function `op`.

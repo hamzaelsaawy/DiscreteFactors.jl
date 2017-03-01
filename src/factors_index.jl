@@ -1,25 +1,20 @@
 #
 # Factors Indexing
 #
-# For ϕ[:A] syntax and such
 
-# Column access (ϕ[:A]) returns the dimension for comparisons and stuff
-# TODO column access?
-#Base.getindex(ϕ::Factor, dim::Symbol) = getdim(ϕ, dim)
-#Base.getindex(ϕ::Factor, dims::Vector{Symbol}) = getdim(ϕ, dims)
-
-# TODO setindex for ϕ[dim]
-# TODO ϕ[:X=> ...]
-# TODO ϕ[:]
-
+Base.getindex(ϕ::Factor, ::Colon) = Factor(ϕ.dimensions, ϕ.potential[:])
 
 Base.getindex(ϕ::Factor, Is::Pair{Symbol}...) = ϕ[Assignment(Is...)]
+
 function Base.getindex(ϕ::Factor, a::Assignment)
     (I, dims) = _translate_index(ϕ, a)
     return Factor(dims, ϕ.potential[I...])
 end
 
+Base.setindex!(ϕ::Factor, v, ::Colon) = (ϕ.potential[:] = v)
+
 Base.setindex!(ϕ::Factor, v, Is::Pair{Symbol}...) = setindex!(ϕ, v, Assignment(Is...))
+
 function Base.setindex!(ϕ::Factor, v, a::Assignment)
     (I, _) = _translate_index(ϕ, a)
     return ϕ.potential[I...] = v
@@ -104,4 +99,4 @@ sub2at{N, K}(ϕ::Factor{N}, I::Vararg{Integer, K}) =
 
 Convert a subscript into an assignment.
 """
-sub2a(ϕ::Factor, I::Integer...) = Dict( s => v for (s, v) in zip(names(ϕ), sub2at(ϕ, I...)))
+sub2a(ϕ::Factor, I::Integer...) = Dict( s => v for (s, v) in zip(names(ϕ), sub2at(ϕ, I...)) )

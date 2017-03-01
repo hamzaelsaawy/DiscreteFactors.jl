@@ -50,7 +50,6 @@ export
     sub2a,
     sub2at,
 
-
     # negatives stuff
     set_negative_mode,
     NegativeMode,
@@ -58,17 +57,14 @@ export
     NegativeWarn,
     NegativeError
 
-# define Dimension
-include("dimensions.jl")
-# define Factors
-include("factors_main.jl")
-# define Assignment
-include("auxiliary.jl")
+include("dimensions.jl") # define Dimension
+include("factors_main.jl") # define Factors
+include("auxiliary.jl") # define Assignment
 
 include("factors_index.jl")
 include("factors_iter.jl")
-#include("factors_dims.jl")
 include("factors_map.jl")
+#include("factors_dims.jl")
 
 include("negatives.jl")
 include("dataframes.jl")
