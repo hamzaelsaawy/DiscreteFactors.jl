@@ -19,16 +19,13 @@ function pattern(ϕ::Factor, dims::Vector{Symbol})
 
     _check_dims_valid(dims, ϕ)
 
-    sz = size(ϕ, dims...)
-
-    if length(dims) == 1
-        sz = (sz, )
-    end
-
-    len = prod(sz)
+    inds = indexin(dims, ϕ)
+    len = length(ϕ)
     p = Array{Int}(len, length(dims))
+
     for i in 1:len
-        p[i, :] = [ind2sub(sz, i)...]
+        t = ind2sub(ϕ, i)
+        p[i, :] = [t[inds]...]
     end
 
     return p

@@ -1,7 +1,7 @@
 #
-# Factors type and constructors
+# Factors Main
 #
-# Main code and basic functions for Factors
+# Factors definition, constructors, and basic functions
 
 """
     Factor(dims::AbstractVector{Dimension}, potential::Array{Real})
@@ -118,7 +118,7 @@ Create a zero-dimensional Factor.
 Factor(potential::Real) = Factor(Dimension[], squeeze(Float64[potential], 1))
 
 #                                   Similar
-Base.similar(ϕ::Factor) = Factor(scope(ϕ), nothing)
+Base.similar(ϕ::Factor) = Factor(copy(scope(ϕ)), nothing)
 
 ####################################################################################################
 #                                   Methods
@@ -204,7 +204,7 @@ end
     return ϕ.dimensions[inds]
 end
 
-function Base.permutedims!(ϕ::Factor, perm)
+@inline function Base.permutedims!(ϕ::Factor, perm)
     ϕ.potential = permutedims(ϕ.potential, perm)
     ϕ.dimensions = ϕ.dimensions[perm]
 

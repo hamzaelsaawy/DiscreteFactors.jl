@@ -13,6 +13,8 @@
 # TODO sub2ind for assignments
 # TODO broadcast fallback for empty arrays
 # TODO broadcast_reduce tag-team
+# TODO map_reduce as well
+# TODO inner join
 # TODO find a better error type for NegativeError
 # TODO add @boundscheck and @inbounds where applicable
 
@@ -37,18 +39,23 @@ export
     Assignment,
 
     Factor,
+    # basic access
     scope,
     potential,
     lengths,
+    # interact with dimensions
     getdim,
     pattern,
     pattern_states,
     getdim,
     reducedim!,
-    a2sub,
+    # assignment conversions
     at2sub,
-    sub2a,
     sub2at,
+    at2a,
+    a2at,
+    a2sub,
+    sub2a,
 
     # negatives stuff
     set_negative_mode,
@@ -57,18 +64,20 @@ export
     NegativeWarn,
     NegativeError
 
-include("dimensions.jl") # define Dimension
+include("dimensions.jl")   # define Dimension
 include("factors_main.jl") # define Factors
-include("auxiliary.jl") # define Assignment
+include("auxiliary.jl")    # define Assignment
 
+include("factors_broadcast.jl")
 include("factors_index.jl")
 include("factors_iter.jl")
+include("factors_join.jl")
 include("factors_map.jl")
-#include("factors_dims.jl")
+include("factors_reduce.jl")
 
-include("negatives.jl")
 include("dataframes.jl")
-include("io.jl")
 include("errors.jl")
+include("io.jl")
+include("negatives.jl")
 
 end # module

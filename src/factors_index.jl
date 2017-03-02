@@ -57,27 +57,10 @@ Return the index into `potential`
 Base.sub2ind(ϕ::Factor, i::Integer...) = sub2ind(size(ϕ), i...)
 
 """
-    a2sub(ϕ::Factor, a::Assignment) -> subscript
-    a2sub(ϕ::Factor, a::Pair{Symbol}...) -> subscript
-
-Convert an assignment to a subscript. All variables in scope specified as a single value.
-"""
-a2sub(ϕ::Factor, pairs::Pair{Symbol}...) = sub2ind(ϕ, Assignment(pairs...))
-a2sub{N}(ϕ::Factor{N}, a::Assignment) =
-    ntuple(Val{N}) do k
-        d = ϕ.dimensions[k]
-        n = name(d)
-
-        @boundscheck haskey(a, n) || assignment_missing_error(n)
-        return indexin(a[n], d)
-    end
-
-"""
-    at2sub(ϕ::Factor, a::Tuple) -> subscript
+    at2sub(ϕ::Factor, at::Vararg{Any, K}) -> subscript
 
 Convert an assignment tuple to a subscript.
 """
-
 at2sub{N, K}(ϕ::Factor{N}, vs::Vararg{Any, K}) =
     ntuple(Val{min(N, K)}) do k
         d = ϕ.dimensions[k]
@@ -95,8 +78,40 @@ sub2at{N, K}(ϕ::Factor{N}, I::Vararg{Integer, K}) =
     ntuple(k -> ϕ.dimensions[k][I[k]], Val{min(N, K)})
 
 """
+    at2a(ϕ::Factor, at::Vararg{Any, K}) -> Assignment
+
+Convert an assignment tuple to an Assignment.
+"""
+at2a(ϕ::Factor, at::Vararg{Any}) = Dict( s => v for (s, v) in zip(names(ϕ), at) )
+
+"""
+    a2at(ϕ::Factor, a::Assignment) -> Tuple
+    a2at(ϕ::Factor, a::Pair{Symbol}...) -> Tuple
+
+Convert an assignment to an assignment tuple.
+"""
+a2at(ϕ::Factor, pairs::Pair{Symbol}...) = a2at(ϕ, Assignment(pairs...))
+a2at{N}(ϕ::Factor{N}, a::Assignment) =
+    ntuple(Val{N}) do k
+        d = ϕ.dimensions[k]
+        n = name(d)
+
+        @boundscheck haskey(a, n) || assignment_missing_error(n)
+        return a[n]
+    end
+
+"""
+    a2sub(ϕ::Factor, a::Assignment) -> subscript
+    a2sub(ϕ::Factor, a::Pair{Symbol}...) -> subscript
+
+Convert an assignment to a subscript. All variables in scope specified as a single value.
+"""
+a2sub(ϕ::Factor, pairs::Pair{Symbol}...) = a2sub(ϕ, Assignment(pairs...))
+a2sub(ϕ::Factor, a::Assignment) = at2sub(ϕ, a2at(ϕ, a))
+
+"""
     sub2a(ϕ::Factor, i::Integer...) -> Assignment
 
 Convert a subscript into an assignment.
 """
-sub2a(ϕ::Factor, I::Integer...) = Dict( s => v for (s, v) in zip(names(ϕ), sub2at(ϕ, I...)) )
+sub2a(ϕ::Factor, I::Integer...) = at2a(ϕ, sub2at(ϕ, I...))
