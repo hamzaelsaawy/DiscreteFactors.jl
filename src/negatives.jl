@@ -12,7 +12,7 @@ const NegativeIgnore = NegativeMode{:ignore}()
 # I know, this is a really bad idea
 global _hneg = NegativeIgnore
 
-function set_negative_mode(h::NegativeMode)
+@inline function set_negative_mode(h::NegativeMode)
     global _hneg
 
     old_h, _hneg = _hneg, h
@@ -20,8 +20,8 @@ function set_negative_mode(h::NegativeMode)
     return old_h
 end
 
-_check_negatives(ft::Factor) = _check_negatives(ft.potential)
-_check_negatives(ft::Factor, h::NegativeMode) = _check_negatives(ft.potential, h)
+_check_negatives(ϕ::Factor) = _check_negatives(ϕ.potential)
+_check_negatives(ϕ::Factor, h::NegativeMode) = _check_negatives(ϕ.potential, h)
 
 _check_negatives{T<:Real}(p::Array{T}) = _check_negatives(p, _hneg)
 

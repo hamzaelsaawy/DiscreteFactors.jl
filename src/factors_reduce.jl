@@ -2,10 +2,6 @@
 # Factors Reduce
 #
 
-# reduce the dimension and then squeeze them out
-_red_dim(op, ϕ::Factor, inds::Tuple, ::Void) = squeeze(reducedim(op, ϕ.potential, inds), inds)
-_red_dim(op, ϕ::Factor, inds::Tuple, v0) = squeeze(reducedim(op, ϕ.potential, inds, v0), inds)
-
 """
     reducedim(op, ϕ::Factor, dims, [v0])
 
@@ -18,7 +14,7 @@ Base.reducedim(op, ϕ::Factor, dim::Symbol, v0=nothing) = reducedim(op, ϕ, [dim
 function Base.reducedim(op, ϕ::Factor, dims::Vector{Symbol}, v0=nothing)
     _check_dims_valid(dims, ϕ)
     # needs to be a tuple for squeeze
-    inds = (sort!(indexin(dims, ϕ)])...)
+    inds = (sort!(indexin(dims, ϕ))...)
 
     isempty(inds) && return deepcopy(ϕ)
 
@@ -37,26 +33,31 @@ See `Base.reducedim!` for more details
 """
 Base.reducedim!(op, ϕ::Factor, dim::Symbol, v0=nothing) = reducedim(op, ϕ, [dim], v0)
 
-function reducedim!{D<:Dimension, V<:Number}(op, ϕ::Factor{D, V}, dims, v0=nothing)
+function reducedim!(op, ϕ::Factor, dims::Vector{Symbol}, v0=nothing)
     _check_dims_valid(dims, ϕ)
     # needs to be a tuple for squeeze
-    inds = (sort!(indexin(dims, ϕ)])...)
+    inds = (sort!(indexin(dims, ϕ))...)
 
     isempty(inds) && return ϕ
 
     deleteat!(ϕ.dimensions, inds)
     pot_new = _red_dim(op, ϕ, inds, v0)
     ϕ.potential = pot_new
+    _check_negatives(ϕ)
 
     return ϕ
 end
 
-"""
-    Z(ϕ::Factor)
+# reduce the dimension and then squeeze them out
+_red_dim(op, ϕ::Factor, inds::Tuple, ::Void) = squeeze(reducedim(op, ϕ.potential, inds), inds)
+_red_dim(op, ϕ::Factor, inds::Tuple, v0) = squeeze(reducedim(op, ϕ.potential, inds, v0), inds)
 
-Return the partition function.
 """
-Z(ϕ::Factor) = sum(ϕ)
+    Z(ϕ)
+
+Return the partition function (sum of all elements).
+"""
+Z(ϕ) = sum(ϕ)
 
 Base.sum(ϕ::Factor, dims=names(ϕ)) = reducedim(+, ϕ, dims)
 Base.sum!(ϕ::Factor, dims=names(ϕ)) = reducedim!(+, ϕ, dims)

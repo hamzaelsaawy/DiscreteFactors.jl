@@ -1,28 +1,21 @@
 # __precompile__(true)
 
 # TODO update(::Vector{Bool}) check if same length
-# TODO unparameterize factors
 # TODO x/0 = 0
-# TODO non-negative warning?
-# TODO FloatRange dimension and indexin?
-# TODO indexing with pairs vs assignment
-# TODO more constructors paris of symbol to ranges
-# TODO add FactorView or subarray version to access subarray, then squeeze ...
 # TODO broadcast_reduce
-# TODO sub2ind for Assignments
-# TODO sub2ind for assignments
 # TODO broadcast fallback for empty arrays
 # TODO broadcast_reduce tag-team
 # TODO map_reduce as well
-# TODO inner join
-# TODO find a better error type for NegativeError
+# TODO better / faster broadcast
+# TODO implement inner joins
+# TODO better error type for NegativeError
 # TODO add @boundscheck and @inbounds where applicable
 
 module Factors
 
 import Base: .==, .!=, .<, .<=, .>, .>=, in, ==, *, /, +, -,
         show, reducedim, broadcast, broadcast!,
-        show, sum, prod, maximum, minimum, join
+        show, join
 import Base.LinAlg: normalize, normalize
 import DataFrames
 
@@ -33,6 +26,7 @@ export
 
     name,
     eltype,
+    support,
     spttype,
     update,
 

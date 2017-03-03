@@ -17,12 +17,14 @@ _check_values_valid(v, d::Dimension) = (v in d) || not_in_dimension_error(v, d)
     end
 end
 
+# make sure the Assignment only specifies one value per Dimension
 _check_assignment_singleton(i::Int, ::Symbol) = nothing
 _check_assignment_singleton(::Array, name::Symbol) = nonsingleton_assignment_error(name)
 
-
 ####################################################################################################
 #                                   Factors
+
+_dims_sizes{D<:Dimension}(dims::Vector{D}) = ntuple(k -> length(dims[k]), length(dims))
 
 # dims are unique
 _check_dims_unique{D<:Dimension}(dims::Vector{D}) =

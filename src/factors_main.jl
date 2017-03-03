@@ -39,15 +39,24 @@ end
 #  the latter will work more often than not
 
 #                                   Default Constructors
-# convert from ints and other reals to floats
-Factor{D<:Dimension, V<:Real, N}(dims::Vector{D}, potential::Array{V, N}) =
-        Factor{N}(collect(dims), float(potential))
-
 # when it actually is floats, avoid (potential) overhead of float() call
 Factor{D<:Dimension, N}(dims::Vector{D}, potential::Array{Float64, N}) =
-        Factor{N}(collect(dims), potential)
+        Factor{N}(dims, potential)
 
-Factor{V<:Real}(dim::Dimension, potential::Vector{V}) = Factor([dim], potential)
+Factor{V<:Real}(dim::Dimension, potential::Vector{V}) =
+        Factor{1}([dim], float(potential))
+
+# convert from ints and other reals to floats
+Factor{D<:Dimension, V<:Real}(dims::Vector{D}, potential::Array{V}) =
+        Factor(dims, float(potential))
+
+# reshape vector
+Factor{D<:Dimension, V<:Real}(dims::Vector{D}, potential::Vector{V}) =
+        Factor(dims, reshape(potential,  _dims_sizes(dims)))
+
+# for ranges, etc
+Factor{D<:Dimension, V<:Real}(dims::Vector{D}, potential::AbstractVector{V}) =
+        Factor(dims, collect(potential))
 
 #                                   Default Value / Unitialized
 """
@@ -57,13 +66,13 @@ Create a factor with a potential initialized to `value`.
 Use `value=nothing` for an unitialized potential
 """
 function Factor{D<:Dimension}(dims::Vector{D}, value::Real=0)
-    potential = fill(float(value), map(length, dims)...)
+    potential = fill(float(value), _dims_sizes(dims))
 
     return Factor(dims, potential)
 end
 
 function Factor{D<:Dimension}(dims::Vector{D}, ::Void)
-    potential = Array{Float64}(map(length, dims)...)
+    potential = Array{Float64}( _dims_sizes(dims) )
 
     return Factor(dims, potential)
 end
@@ -71,9 +80,9 @@ end
 Factor(dim::Dimension, value::Real=0) = Factor([dim], value)
 
 #                                   Symbols and Potential
-Factor{V<:Real}(dim::Symbol, potential::Vector{V}) = Factor([dim], potential)
+Factor{V<:Real}(dim::Symbol, potential::AbstractVector{V}) = Factor([dim], potential)
 
-function Factor{V<:Real}(dims::Vector{Symbol}, potential::Array{V})
+function Factor{V<:Real}(dims::Vector{Symbol}, potential::AbstractArray{V})
     (length(dims) == ndims(potential)) || not_enough_dims_error()
     new_dims = map(Dimension, dims, size(potential))
 
@@ -96,15 +105,15 @@ function Factor(dims::Dict{Symbol}, value=0)
     return Factor(new_dims, value)
 end
 
-# this way, its order preserving ... if it matters
+# this way, its order preserving, as opposed to a Dict
 function Factor(potential, dims::Pair{Symbol}...)
-    new_dims = [Dimension(n, a) for (n, a) in dims]
+    new_dims = [Dimension(name, state) for (name, state) in dims]
 
     return Factor(new_dims, potential)
 end
 
 function Factor(dims::Pair{Symbol}...)
-    new_dims = [Dimension(n, a) for (n, a) in dims]
+    new_dims = [Dimension(name, state) for (name, state) in dims]
 
     return Factor(new_dims)
 end
@@ -118,6 +127,11 @@ Create a zero-dimensional Factor.
 Factor(potential::Real) = Factor(Dimension[], squeeze(Float64[potential], 1))
 
 #                                   Similar
+"""
+    similar(ϕ::Factor)
+
+Return an uninitialized Factor with the same dimensions as ϕ.
+"""
 Base.similar(ϕ::Factor) = Factor(copy(scope(ϕ)), nothing)
 
 ####################################################################################################
@@ -163,6 +177,13 @@ Base.size{N}(ϕ::Factor, dims::Vararg{Symbol, N}) = ntuple(k -> size(ϕ, dims[k]
 Return thelength of `ϕ`.
 """
 Base.length(ϕ::Factor) = length(ϕ.potential)
+
+"""
+    values(ϕ)
+
+Return the potential of `ϕ`.
+"""
+Base.values(ϕ::Factor) = ϕ.potential
 
 """
     in(d, ϕ::Factor)

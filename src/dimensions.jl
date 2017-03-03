@@ -22,16 +22,16 @@ type Dimension{T<:AbstractVector} # {T, C<: AbstractVector{T}} <: AbstractVector
 end
 
 Dimension{T<:AbstractVector}(name::Symbol, support::T) =
-    Dimension{T}(name, support)
+        Dimension{T}(name, support)
 
 # promotion is automatic for arrays
 Dimension(name::Symbol, support::Tuple) = Dimension(name, [support...])
 
 # swap out unit ranges with OneTo
 Dimension{V<:Integer}(name::Symbol, support::UnitRange{V}) =
-    (first(support) == 1 && last(support) > 0) ?
-            Dimension{Base.OneTo{V}}(name, Base.OneTo(length(support))) :
-            Dimension{typeof(support)}(name, support)
+        (first(support) == 1 && last(support) > 0) ?
+                Dimension{Base.OneTo{V}}(name, Base.OneTo(length(support))) :
+                Dimension{typeof(support)}(name, support)
 
 """
     Dimension(name::Symbol, length::Integer)
@@ -77,9 +77,9 @@ Base.first(d::Dimension) = d |> support |> first
 
 Base.last(d::Dimension) = d |> support |> last
 
-minimum(d::Dimension) = d |> support |> minimum
+Base.minimum(d::Dimension) = d |> support |> minimum
 
-maximum(d::Dimension) = d |> support |> maximum
+Base.maximum(d::Dimension) = d |> support |> maximum
 
 Base.step(d::RangeDimension) = d |> support |> step
 
