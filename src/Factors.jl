@@ -2,6 +2,8 @@
 
 # TODO update(::Vector{Bool}) check if same length
 # TODO x/0 = 0
+# TODO ϕ .< 3, ϕ1 == ϕ2, etc...
+# TODO push(ϕ, dims...), push(ϕ, Pair{Symbol}...)
 # TODO broadcast_reduce
 # TODO broadcast fallback for empty arrays
 # TODO broadcast_reduce tag-team
@@ -39,6 +41,7 @@ export
     lengths,
     # interact with dimensions
     getdim,
+    push,
     pattern,
     pattern_states,
     getdim,

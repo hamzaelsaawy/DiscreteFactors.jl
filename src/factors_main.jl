@@ -17,7 +17,7 @@ type Factor{N}
     # the value mapped to each instance
     potential::Array{Float64, N}
 
-    function Factor{D<:Dimension}(dimensions::Vector{D}, potential::Array{Float64, N})
+    function Factor{D<:Dimension, K}(dimensions::Vector{D}, potential::Array{Float64, K})
         _check_dims_unique(dimensions)
         _check_dims_singleton(dimensions)
         _check_negatives(potential)
@@ -39,23 +39,19 @@ end
 #  the latter will work more often than not
 
 #                                   Default Constructors
-# when it actually is floats, avoid (potential) overhead of float() call
-Factor{D<:Dimension, N}(dims::Vector{D}, potential::Array{Float64, N}) =
-        Factor{N}(dims, potential)
-
-Factor{V<:Real}(dim::Dimension, potential::Vector{V}) =
-        Factor{1}([dim], float(potential))
+Factor{V<:Real}(dim::Dimension, potential::Vector{V}) = Factor{1}([dim], float(potential))
 
 # convert from ints and other reals to floats
-Factor{D<:Dimension, V<:Real}(dims::Vector{D}, potential::Array{V}) =
-        Factor(dims, float(potential))
+# also ,reshape
+function Factor{D<:Dimension, V<:Real}(dims::Vector{D}, potential::Array{V})
+    (length(dims) != 1 && ndims(potential) == 1) &&
+        (potential = reshape(potential, _dims_sizes(dims)))
 
-# reshape vector
-Factor{D<:Dimension, V<:Real}(dims::Vector{D}, potential::Vector{V}) =
-        Factor(dims, reshape(potential,  _dims_sizes(dims)))
+    return Factor{ndims(potential)}(dims, float(potential))
+end
 
 # for ranges, etc
-Factor{D<:Dimension, V<:Real}(dims::Vector{D}, potential::AbstractVector{V}) =
+Factor{D<:Dimension, V<:Real}(dims::Vector{D}, potential::AbstractArray{V}) =
         Factor(dims, collect(potential))
 
 #                                   Default Value / Unitialized
@@ -124,7 +120,7 @@ end
 
 Create a zero-dimensional Factor.
 """
-Factor(potential::Real) = Factor(Dimension[], squeeze(Float64[potential], 1))
+Factor(potential::Real) = Factor(Dimension[], reshape(Float64[potential], () ))
 
 #                                   Similar
 """
@@ -201,7 +197,7 @@ Find the index of `dims` in `ϕ`. Return 0 if not in `ϕ`.
 Base.indexin(dim::Symbol, ϕ::Factor) = findnext(names(ϕ), dim, 1)
 Base.indexin(dims::Vector{Symbol}, ϕ::Factor) = indexin(dims, names(ϕ))
 
-Base.indexin(d::Dimension, ϕ::Factor) = findnext(scope(ϕ), dim, 1)
+Base.indexin(dim::Dimension, ϕ::Factor) = findnext(scope(ϕ), dim, 1)
 Base.indexin{D<:Dimension}(dims::AbstractVector{D}, ϕ::Factor) = indexin(dims, scope(ϕ))
 
 """
@@ -237,13 +233,13 @@ Base.permutedims(ϕ::Factor, perm) = permutedims!(deepcopy(ϕ), perm)
 """
     push(ϕ::Factor, dim::Dimension)
 
-Append a new dimension to a Factor
+Return a new Factor with `dim` appended to it.
 """
-function Base.push!(ϕ::Factor, dim::Dimension)
+@inline function push(ϕ::Factor, dim::Dimension)
     (name(dim) in names(ϕ)) && error("Dimension $(name(dim)) already exists")
 
-    ϕ.dimensions = push!(Vector{Dimension}(ϕ.dimensions), dim)
-    ϕ.potential = duplicate(ϕ.potential, length(dim))
+    new_dims = [scope(ϕ)..., dim]
+    new_pot = duplicate(ϕ.potential, length(dim))
 
-    return ϕ
+    return Factor(new_dims, new_pot)
 end

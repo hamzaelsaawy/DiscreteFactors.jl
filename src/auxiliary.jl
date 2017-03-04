@@ -51,7 +51,7 @@ _check_dims_valid(d::Symbol, φ::Factor) = (d in φ) || not_in_factor_error(dim,
 end
 
 """
-    duplicate(A, dims)
+    duplicate(A, dims::Integer...)
 
 Repeates an array only through higer dimensions `dims`.
 
@@ -81,7 +81,7 @@ julia> duplicate([1 3; 2 4], 3)
  2  4
 ```
 """
-function duplicate(A::Array, dims::Dims)
+@inline function duplicate(A::Array, dims::Vararg{Integer})
     size_in = size(A)
 
     length_in = length(A)

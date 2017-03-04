@@ -15,13 +15,13 @@ not_in_dimension_error(v, d::Dimension) =
 ####################################################################################################
 #                                   Factors
 
-non_unique_dims_error() = throw(ArgumentError("dimension names must be unique"))
+non_unique_dims_error() = throw(ArgumentError("Dimension names must be unique"))
 
 not_enough_dims_error() =
-        throw(ArgumentError("`potential`s number of " *
+        throw(DimensionMismatch("`potential`s number of " *
                 "dimensions must match the length of `dimensions`"))
 
-invalid_dim_sizes() = throw(ArgumentError("dimension lengths must match shape of `potential`"))
+invalid_dim_sizes() = throw(DimensionMismatch("dimension lengths must match shape of `potential`"))
 
 not_in_factor_error(name::Symbol, φ::Factor) =
         throw(ArgumentError(repr(name) * " is not in factor " * repr(φ)))

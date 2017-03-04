@@ -111,11 +111,11 @@ end
     @test name(d) == :X
     @test values(d) == []
     @test isempty(d)
-    @test size(d) = (0,)
+    @test size(d) == (0,)
 end
 
 @testset "Equality (& Tuple Constructor)"
-    X1 = Dimension(:X, 3:5
+    X1 = Dimension(:X, 3:5)
     X2 = Dimension(:X, 3:5)
     X3 = Dimension(:X, 3:6)
     s = Dimension(:S, 'a':'y')
@@ -150,7 +150,7 @@ end
         end
     end
 
-    @testset "more tests"
+    @testset "more tests" begin
         d = Dimension(:x, 21:3:40)
         xs = [1, 2, 5, 7, 201, 3, 0, -3, 4, 19, 24]
         @test indexin(xs, d) == indexin(xs, values(d))
@@ -158,12 +158,12 @@ end
 end
 
 #                                   promotion to OneTo
-@testset "OneTo promotion" beign
+@testset "OneTo promotion" begin
     d = Dimension(:X, 1:3)
     @test typeof(values(d)) == Base.OneTo{Int64}
 end
 
-@testset "Update" begin
+@testset "update" begin
     x = Dimension(:X, 0:3:15)
 
     @test_throws ArgumentError update(x, [1, 3])
@@ -185,8 +185,7 @@ end
     @test i == 3
 end
 
-#                               iterating
-@testset "Iteration" begin
+@testset "iteration" begin
     x = Dimension(:X, 0:3:15)
     @test collect(x) == [0, 3, 6, 9, 12, 15]
 end

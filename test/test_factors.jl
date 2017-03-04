@@ -13,14 +13,12 @@
     l2 = Dimension(:L, [3, 4])
 
     @test_throws ArgumentError Factor([c, l1, o, s, l2])
-    @test_throws ArgumentError Factor([c, o], rand(4, 6))
-    @test_throws ArgumentError Factor([c, o], rand(4, 6, 3))
-    @test_throws ArgumentError Factor(rand(4, 6, 3), :X=>3, :Y=>3, :Z=>4)
-    @test_throws ArgumentError Factor(rand(4, 6, 3), :X=>3, :Y=>3)
+    @test_throws DimensionMismatch Factor([c, o], rand(4, 6))
+    @test_throws DimensionMismatch Factor([c, o], rand(4, 6, 3))
+    @test_throws DimensionMismatch Factor(rand(4, 6, 3), :X=>3, :Y=>3, :Z=>4)
+    @test_throws DimensionMismatch Factor(rand(4, 6, 3), :X=>3, :Y=>3)
 
-    @test_throws ArgumentError Factor(Dimensio(:X, []), [])
-
-    ArgumentError Factor(Dimensio(:X, []), [])
+    @test_throws MethodError Factor(Dimension(:X, []), Float64[])
 end
 
 @testset "basics" begin
@@ -34,27 +32,25 @@ end
     @test ndims(ft) == 3
     @test indexin([:C], ft) == [1]
     @test indexin(:O, ft) == 2
-    @test indexin(o, ft) == oct
+    @test indexin(o, ft) == 2
     @test getdim(ft, :S) == s
     @test size(ft) == (4, 5, 13)
-    @test lengths(ft) == [4, 5, 13]
     @test all(values(ft) .== 0)
     @test eltype(ft) == (Float64)
     @test all(names(ft) .== [:C, :O, :S])
     @test length(ft) == prod(size(ft))
     @test getdim(ft, :S) == s
 
-    push!(ft, l)
+    ft = push(ft, l)
 
     @test ndims(ft) == 4
     @test size(ft) == (4, 5, 13, 31)
-    @test all([size(ft)...] .== [4, 5, 13, 31])
     @test size(ft, :S) == 13
     @test size(ft, :O) == 5
     @test size(ft, :L) == 31
-    @test all([size(ft, [:L, :S, :O])...] .== [31, 13, 5])
+    @test size(ft, :L, :S, :O) == (31, 13, 5)
     @test all(ft.potential .== 0)
-    @test all(names(ft) .== [:C, :O, :S, :L])
+    @test names(ft) == [:C, :O, :S, :L]
     @test length(ft) == prod(size(ft))
     @test getdim(ft, :L) == l
     @test indexin(:C, ft) == 1
@@ -65,7 +61,6 @@ end
 
     @test ndims(ft2) == 4
     @test size(ft2) == (13, 5, 4, 31)
-    @test [size(ft2)...] == [13, 5, 4, 31]
     @test all(ft2.potential .== 0)
     @test all(names(ft2) .== [:S, :O, :C, :L])
     @test length(ft2) == prod(size(ft))
@@ -78,7 +73,7 @@ end
     @test ft2.dimensions[2] == o
 
     permutedims!(ft, [3, 2, 1, 4])
-    @test all(names(ft) .== names(ft2))
+    @test names(ft) == names(ft2)
 end
 
 @testset "basics 2" begin
@@ -89,7 +84,7 @@ end
     @test eltype(ft) == Float64
     @test ndims(ft) == 2
     @test size(ft) == (2, 3)
-    @test all(ft.potential .== [1.0 2 3; 4 5 6])
+    @test all(ft.potential .== [1.0 3 5; 2 4 6])
     @test all(names(ft) .== [:l1, :l2])
     @test length(ft) == 6
 
@@ -105,8 +100,6 @@ end
 end
 
 @testset "empty" begin
-    @test_throws ArgumentError Factor([])
-    @test_throws ArgumentError Factor([1, 2])
     # see if any puke up errors
     Factor(2016)
     Factor(Inf)
@@ -116,7 +109,7 @@ end
     @test names(f) == Symbol[]
     @test scope(f) == Dimension[]
     @test length(f) == 1
-    @test size(f) == 0
+    @test size(f) == ()
 end
 
 @testset "pairs" begin
@@ -149,7 +142,7 @@ end
         @test all(ft.potential[:] .== collect(1:24))
     end
 
-    @test_throws ArgumentError Factor(1:13, :X=>3, :Y=>4)
+    @test_throws DimensionMismatch Factor(1:13, :X=>3, :Y=>4)
 end
 
 @testset "dict" begin
