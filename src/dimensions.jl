@@ -142,7 +142,11 @@ Return the indicies of `I` in `d` and an updated dimension using `I`.
     return _update(d, indexin(I, d))
 end
 
-update(d::Dimension, I::AbstractVector{Bool}) = _update(d, Base.to_index(I))
+function update(d::Dimension, I::AbstractVector{Bool})
+    checkbounds(values(d), I)
+    _update(d, Base.to_index(I))
+end
+
 update(d::Dimension, ::Colon) = (:, d)
 
 # given the index
