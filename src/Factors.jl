@@ -17,7 +17,7 @@ module Factors
 
 import Base: .==, .!=, .<, .<=, .>, .>=, in, ==, *, /, +, -,
         show, reducedim, broadcast, broadcast!,
-        show, join
+        show, join, hash
 import Base.LinAlg: normalize, normalize
 import DataFrames
 
