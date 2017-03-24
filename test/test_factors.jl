@@ -18,7 +18,7 @@
     @test_throws DimensionMismatch Factor(rand(4, 6, 3), :X=>3, :Y=>3, :Z=>4)
     @test_throws DimensionMismatch Factor(rand(4, 6, 3), :X=>3, :Y=>3)
 
-    @test_throws MethodError Factor(Dimension(:X, []), Float64[])
+    @test_throws ArgumentError Factor(Dimension(:X, []), Float64[])
 end
 
 @testset "basics" begin

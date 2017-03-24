@@ -114,7 +114,7 @@ end
     @test size(d) == (0,)
 end
 
-@testset "Equality (& Tuple Constructor)"
+@testset "Equality (& Tuple Constructor)" begin
     X1 = Dimension(:X, 3:5)
     X2 = Dimension(:X, 3:5)
     X3 = Dimension(:X, 3:6)
@@ -129,7 +129,7 @@ end
     @test X1 == fakeX
 end
 
-@testset "indexin" being
+@testset "indexin" begin
     @testset "int ranges" begin
         rs = [-10:-1:-15, -15:1:-10, 15:-1:10, 15:-1:10,
             20:-2:10, -10:-2:-20, -21:3:-9]

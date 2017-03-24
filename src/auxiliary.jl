@@ -42,11 +42,11 @@ _check_dims_singleton(d::Dimension) = isempty(d) && empty_support_error(name(d))
 end
 
 # make sure all dims are valid (in φ)
-_check_dims_valid(d::Symbol, φ::Factor) = (d in φ) || not_in_factor_error(dim, φ)
+_check_dims_valid(d::Symbol, φ::Factor) = (d in φ) || not_in_factor_error(d, φ)
 
-@inline function _check_dims_valid(dims::Vector{Symbol}, ϕ::Factor)
+@inline function _check_dims_valid(dims::Vector{Symbol}, φ::Factor)
     for d in dims
-        (d in ϕ) || not_in_factor_error(d, φ)
+        (d in φ) || not_in_factor_error(d, φ)
     end
 end
 
