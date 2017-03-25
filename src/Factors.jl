@@ -44,6 +44,7 @@ export
     getdim,
     reducedim!,
     Z,
+    marginalize,
     # assignment conversions
     at2sub,
     sub2at,

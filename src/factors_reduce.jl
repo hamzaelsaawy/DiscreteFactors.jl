@@ -40,3 +40,11 @@ Base.sum(ϕ::Factor, dims=names(ϕ)) = reducedim(+, ϕ, dims)
 Base.prod(ϕ::Factor, dims=names(ϕ)) = reducedim(*, ϕ, dims)
 Base.maximum(ϕ::Factor, dims=names(ϕ)) = reducedim(max, ϕ, dims)
 Base.minimum(ϕ::Factor, dims=names(ϕ)) = reducedim(min, ϕ, dims)
+
+"""
+    marginalize(ϕ, dims)
+
+Sum out all but the specified dimensions
+"""
+marginalize(ϕ::Factor, dim::Symbol) = marginalize(ϕ, [dim])
+marginalize(ϕ::Factor, dims::AbstractVector{Symbol}) = sum(ϕ, setdiff(names(ϕ), dims))

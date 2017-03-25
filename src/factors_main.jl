@@ -197,6 +197,9 @@ Find the index of `dims` in `ϕ`. Return 0 if not in `ϕ`.
 Base.indexin(dim::Symbol, ϕ::Factor) = findnext(names(ϕ), dim, 1)
 Base.indexin(dims::Vector{Symbol}, ϕ::Factor) = indexin(dims, names(ϕ))
 
+Base.indexin(dim::Dimension, ϕ::Factor) = findnext(scope(ϕ), dim, 1)
+Base.indexin{D<:Dimension}(dims::AbstractVector{D}, ϕ::Factor) = indexin(dims, scope(ϕ))
+
 # Julia has a hashing issue (?), so if 2 dims have the same name & support, Julia
 #  may not find find the first via indexin ...
 # Base.indexin(dim::Dimension, ϕ::Factor) = findnext(scope(ϕ), dim, 1)

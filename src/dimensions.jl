@@ -166,8 +166,8 @@ _update(d::Dimension, inds::Vector{Int}) = (inds, Dimension(name(d), d[inds]))
 .!=(d::Dimension, x) = !(d .== x)
 
 # needed for indexin, union, etc..
-hash(f::Dimension, h::UInt) = hash(f.name, h) + hash(f.support, h)
-hash(f::Dimension) = hash(f, zero(UInt))
+hash(d::Dimension, h::UInt) = hash(d.name, h) + hash(d.support, h)
+hash(d::Dimension) = hash(d, zero(UInt))
 
 Base.in(x, d::Dimension) = in(x, values(d))
 

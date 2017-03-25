@@ -107,11 +107,11 @@ a2at{N}(ϕ::Factor{N}, a::Assignment) =
 Convert an assignment to a subscript. All variables in scope specified as a single value.
 """
 a2sub(ϕ::Factor, pairs::Pair{Symbol}...) = a2sub(ϕ, Assignment(pairs...))
-a2sub(ϕ::Factor, a::Assignment) = at2sub(ϕ, a2at(ϕ, a))
+a2sub(ϕ::Factor, a::Assignment) = at2sub(ϕ, a2at(ϕ, a)...)
 
 """
     sub2a(ϕ::Factor, i::Integer...) -> Assignment
 
 Convert a subscript into an assignment.
 """
-sub2a(ϕ::Factor, I::Integer...) = at2a(ϕ, sub2at(ϕ, I...))
+sub2a(ϕ::Factor, I::Integer...) = at2a(ϕ, sub2at(ϕ, I...)...)
