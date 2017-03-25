@@ -7,6 +7,8 @@ function Base.convert(::Type{DataFrames.DataFrame}, ϕ::Factor)
     DataFrames.rename!(df, names(df), names(ϕ))
     df[:potential] = ϕ.potential[:]
 
+    DataFrames.pool!(df, names(ϕ))
+
     return df
 end
 

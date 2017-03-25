@@ -1,24 +1,21 @@
-# __precompile__(true)
+__precompile__(true)
 
-# TODO update(::Vector{Bool}) check if same length
 # TODO x/0 = 0
 # TODO ϕ .< 3, ϕ1 == ϕ2, etc...
 # TODO push(ϕ, dims...), push(ϕ, Pair{Symbol}...)
-# TODO broadcast_reduce
 # TODO broadcast fallback for empty arrays
+# TODO broadcast is very poorly written ...
 # TODO broadcast_reduce tag-team
 # TODO map_reduce as well
 # TODO better / faster broadcast
-# TODO implement inner joins
+# TODO implement inner joins (?? what for)
 # TODO better error type for NegativeError
+# TODO also, better error type of others (e.g. Bounds error, DimensionMismatch, ...)
 # TODO add @boundscheck and @inbounds where applicable
 
 module Factors
 
-import Base: .==, .!=, .<, .<=, .>, .>=, in, ==, *, /, +, -,
-        show, reducedim, broadcast, broadcast!,
-        show, join, hash
-import Base.LinAlg: normalize, normalize
+import Base: .==, .!=, .<, .<=, .>, .>=, in, ==, *, /, +, -, hash
 import DataFrames
 
 export
@@ -46,6 +43,7 @@ export
     pattern_states,
     getdim,
     reducedim!,
+    Z,
     # assignment conversions
     at2sub,
     sub2at,

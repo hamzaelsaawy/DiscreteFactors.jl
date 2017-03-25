@@ -5,7 +5,7 @@
 
 ####################################################################################################
 #                                   Dimensions
-show(io::IO, d::Dimension) =
+Base.show(io::IO, d::Dimension) =
     print(io, name(d), ":  ", _support_repr(values(d)))
 
 _support_repr(v::AbstractVector) = repr(v) * " (" * repr(length(v)) * ")"
@@ -19,7 +19,7 @@ _support_repr(v::UnitRange) =
 _support_repr(v::Base.OneTo) = "1:" * repr(last(v))
 
 Base.mimewritable(::MIME"text/html", d::Dimension) = false
-show(io::IO, a::MIME"text/html", d::Dimension) =
+Base.show(io::IO, a::MIME"text/html", d::Dimension) =
         print(io, replace(replace(repr(d), "\n", "<br>"), "  ", "&emsp;"))
 
 ####################################################################################################

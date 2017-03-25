@@ -2,26 +2,28 @@
 # Factors Broadcast Tests
 #
 
-###############################################################################
-#                   broadcast
-let
-ϕ = Factor([:X, :Y], Float64[1 2; 3 4; 5 6])
+@testset "Factors Broadcast" begin
 
-@test elementwise_isapprox(
-        broadcast(*, ϕ, [:Y, :X], [[10, 0.1], 100.0]).potential,
-        Float64[1000 20; 3000 40; 5000 60])
+@testset "basic" begin
+        ϕ = Factor([:X, :Y], [1 2; 3 4; 5 6])
 
-@test_throws ArgumentError broadcast(*, ϕ, [:X, :Z], [[10, 1, 0.1], [1, 2, 3]])
+        @test_approx_eq(
+                broadcast(*, ϕ, [:Y, :X], [[10, 0.1], 100.0]).potential,
+                Float64[1000 20; 3000 40; 5000 60])
 
-@test_throws ArgumentError broadcast(*, ϕ, [:Z, :X, :A], [2, [10, 1, 0.1], [1, 2, 3]])
-
-@test_throws DimensionMismatch broadcast(*, ϕ, :X, [2016, 58.0])
+        @test_throws ArgumentError broadcast(*, ϕ, [:X, :Z], [[10, 1, 0.1], [1, 2, 3]])
+        @test_throws ArgumentError broadcast(*, ϕ, [:Z, :X, :A], [2, [10, 1, 0.1], [1, 2, 3]])
+        @test_throws DimensionMismatch broadcast(*, ϕ, :X, [2016, 58.0])
+        @test_throws MethodError broadcast(*, ϕ, :X, "Asdas")
 end
 
-let
-ϕ = Factor([:X, :Y, :Z], [3, 2, 2])
-ϕ.potential[:] = Float64[1, 2, 3, 2, 3, 4, 4, 6, 7, 8, 10, 16]
+@testset "2" begin
+        ϕ = Factor(:X=>3, :Y=>2, :Z=>2)
+        rand!(ϕ)
 
-@test DataFrame(broadcast(+, broadcast(+, ϕ, :Z, [10, 0.1]), :X, 10.0)) ==
-        DataFrame(broadcast(+, ϕ, [:X, :Z], [10.0, [10, 0.1]]))
+        @test_approx_eq(
+                broadcast(+, broadcast(+, ϕ, :Z, [10, 0.1]), :X, [1, 10, 1]).potential,
+                broadcast(+, ϕ, [:X, :Z], [[1, 10, 1], [10, 0.1]]).potential)
+end
+
 end

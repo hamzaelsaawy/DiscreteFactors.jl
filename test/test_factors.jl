@@ -18,7 +18,7 @@
     @test_throws DimensionMismatch Factor(rand(4, 6, 3), :X=>3, :Y=>3, :Z=>4)
     @test_throws DimensionMismatch Factor(rand(4, 6, 3), :X=>3, :Y=>3)
 
-    @test_throws MethodError Factor(Dimension(:X, []), Float64[])
+    @test_throws ArgumentError Factor(Dimension(:X, []), Float64[])
 end
 
 @testset "basics" begin
@@ -32,7 +32,6 @@ end
     @test ndims(ft) == 3
     @test indexin([:C], ft) == [1]
     @test indexin(:O, ft) == 2
-    @test indexin(o, ft) == 2
     @test getdim(ft, :S) == s
     @test size(ft) == (4, 5, 13)
     @test all(values(ft) .== 0)

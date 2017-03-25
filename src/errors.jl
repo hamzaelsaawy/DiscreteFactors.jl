@@ -1,7 +1,7 @@
 #
 # Errors
 #
-# (many of) the errors that can be thrown
+# (many of) the errors thrown
 
 ####################################################################################################
 #                                   Dimensions
