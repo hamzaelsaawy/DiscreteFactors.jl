@@ -15,7 +15,7 @@ __precompile__(true)
 
 module Factors
 
-import Base: .==, .!=, .<, .<=, .>, .>=, in, ==, *, /, +, -
+import Base: .==, .!=, .<, .<=, .>, .>=, in, ==, *, /, +, -, hash
 import DataFrames
 
 export
