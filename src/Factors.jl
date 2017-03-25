@@ -1,9 +1,10 @@
-# __precompile__(true)
+__precompile__(true)
 
 # TODO x/0 = 0
 # TODO ϕ .< 3, ϕ1 == ϕ2, etc...
 # TODO push(ϕ, dims...), push(ϕ, Pair{Symbol}...)
 # TODO broadcast fallback for empty arrays
+# TODO broadcast is very poorly written ...
 # TODO broadcast_reduce tag-team
 # TODO map_reduce as well
 # TODO better / faster broadcast
@@ -14,8 +15,7 @@
 
 module Factors
 
-import Base: .==, .!=, .<, .<=, .>, .>=, in, ==, *, /, +, -,
-        show, reducedim, broadcast, broadcast!, join
+import Base: .==, .!=, .<, .<=, .>, .>=, in, ==, *, /, +, -
 import DataFrames
 
 export
@@ -43,6 +43,7 @@ export
     pattern_states,
     getdim,
     reducedim!,
+    Z,
     # assignment conversions
     at2sub,
     sub2at,

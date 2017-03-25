@@ -2,69 +2,51 @@
 # Factors Reduce Tests
 #
 
+@testset "Factors Redude" begin
 
-let
-x = OrdinalDimension(:X, [2, 5, 7])
-y = OrdinalDimension(:Y, [2, 3])
-z = OrdinalDimension(:Z, ['a', 'c'])
+@testset "main" begin
+    x = Dimension(:X, [2, 5, 7])
+    y = Dimension(:Y, [2, 3])
+    z = Dimension(:Z, ['a', 'c'])
 
-ft = Factor([x, y, z], Float64)
-ft.v[:] = [1, 2, 3, 2, 3, 4, 4, 6, 7, 8, 10, 16]
+    ϕ = Factor([x, y, z], [1, 2, 3, 2, 3, 4, 4, 6, 7, 8, 10, 16])
 
-df_original = DataFrame(ft)
+    df_original = DataFrame(ϕ)
 
-@test_throws ArgumentError reducedim!(*, ft, "waldo")
-# make sure it didn't change ft
-@test DataFrame(ft) == df_original
+    @test_throws ArgumentError reducedim(*, ϕ, :waldo)
+    # make sure it didn't change ϕ
+    @test DataFrame(ϕ) == df_original
 
-@test DataFrame(broadcast(+, broadcast(+, ft, :Z, [10, 0.1]), :X, 10)) ==
-        DataFrame(broadcast(+, ft, [:X, :Z], [10, [10, 0.1]]))
+    @test sum(broadcast(*, ϕ, :Z, 0)).potential == reshape([0.0], ())
 
-# squeeze does some weird stuff man ...
-@test sum(broadcast(*, ft, :Z, 0), names(ft)).v == squeeze([0.0], 1)
+    df = DataFrame(X = [2, 5, 7], potential = [123.0, 165.0, 237.0])
 
-    let
-    df = DataFrame(X = [2, 5, 7], v = [123.0, 165.0, 237.0])
+    ϕ2 = broadcast(*, ϕ, :Z, [1, 10])
+    ϕ2 = sum(ϕ2, [:Y, :Z])
 
-    ft2 = broadcast(*, ft, :Z, [1, 10])
-    sum!(ft2, [:Y, :Z])
+    # ϕ didn't change
+    @test DataFrame(ϕ2) != df_original
+    @test DataFrame(ϕ2) == df
 
-    # ft didn't change
-    @test DataFrame(ft2) != df_original
-    @test DataFrame(ft2) == df
-    end
+    df2 = DataFrame(X = [2, 5, 7], potential = [15, 21, 30])
+    @test DataFrame(sum(ϕ, [:Y, :Z])) == df2
 
-    let
-    df = DataFrame(X = [2, 5, 7], v = [15, 21, 30])
-    @test DataFrame(sum(ft, [:Y, :K, :Z, :waldo])) == df
-    end
+    @test first(Z(ϕ).potential) == sum(ϕ.potential)
 end
 
-error("test join with ft2 only having dimesnions in ft1. and vice versa")
+@testset "singleton" begin
+    ϕ = Factor(1:16, :X=>4, :Z=>4)
+    z = Z(ϕ)
+    @test ndims(z) == 0
+    @test z.potential == reshape([136], ())
+    @test names(z) == Symbol[]
 
-###############################################################################
-#                   reduce dims
-let
-ϕ = Factor([:X, :Y, :Z], [3, 2, 2])
-ϕ.potential[:] = Float64[1, 2, 3, 2, 3, 4, 4, 6, 7, 8, 10, 16]
+    ϕ2 = sum(ϕ, :Z)
+    @test ϕ2.potential == [28, 32, 36, 40]
+    @test_approx_eq prod(ϕ2).potential 1290240.0
 
-df_original = DataFrame(ϕ)
+    ϕs = Factor(23)
+    @test minimum(ϕs).potential == reshape([23], ())
+end
 
-@test_throws ArgumentError reducedim!(*, ϕ, :waldo)
-# make sure it didn't change ϕ
-@test DataFrame(ϕ) == df_original
-
-# squeeze does some weird stuff man ...
-@test sum(broadcast(*, ϕ, :Z, 0.0), names(ϕ)).potential == squeeze([0.0], 1)
-
-df = DataFrame(X = [1, 2, 3], potential = [123.0, 165.0, 237.0])
-
-ϕ2 = broadcast(*, ϕ, :Z, [1, 10.0])
-sum!(ϕ2, [:Y, :Z])
-
-# ϕ didn't change
-@test DataFrame(ϕ2) != df_original
-@test DataFrame(ϕ2) == df
-
-@test_throws ArgumentError sum(ϕ, [:Y, :K, :Z, :waldo])
 end
