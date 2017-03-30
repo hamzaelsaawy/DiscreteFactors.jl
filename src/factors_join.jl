@@ -15,6 +15,9 @@ function Base.join(op, ϕ1::Factor, ϕ2::Factor)
     # more useful for edge cases where one is (or both are) singleton
     if length(ϕ1) < length(ϕ2)
         ϕ2, ϕ1 = ϕ1, ϕ2
+        op_new = (x, y) -> op(y, x)
+    else
+        op_new = op
     end
 
     common_names = intersect(names(ϕ1), names(ϕ2))    
@@ -52,9 +55,9 @@ function Base.join(op, ϕ1::Factor, ϕ2::Factor)
 
     # ndims(ϕ1) == 0 implies ndims(ϕ2) == 0 b/c len(ϕ1) >= len(ϕ2)
     if ndims(ϕ1) == 0
-        new_pot = op(ϕ1.potential[1], temp[1])
+        new_pot = op_new(ϕ1.potential[1], temp[1])
     else
-        broadcast!(op, new_pot, ϕ1.potential, temp)
+        broadcast!(op_new, new_pot, ϕ1.potential, temp)
     end
 
     return Factor(new_dims, new_pot)

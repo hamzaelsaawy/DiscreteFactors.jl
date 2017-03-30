@@ -53,7 +53,29 @@ end
     @test_throws DimensionMismatch ϕ1 * ϕ2
 end
 
+
+@testset "swapping" begin
+    # current implementation swaps the smaller one to the end
+    ϕ1 = Factor(:Y, [2, 3, 4])
+    ϕ2 = Factor([:X, :Y, :Z], reshape(collect(1:27), (3, 3, 3)))
+    ϕ3 = ϕ1 - ϕ2
+
+    p1 = ϕ1.potential
+    p2 = ϕ2.potential
+    p3 = reshape(p1, 1, 3, 1) .- p2
+
+    @test_approx_eq p3 ϕ3.potential 
+end
+
 @testset "singleton" begin
+    ϕ2 = Factor(:A=>2, :B=>3, :C=>2)
+    ϕ2.potential[:] = collect(1:length(ϕ2))
+    ϕ1 = Factor(0.1)
+    ϕ3 = ϕ1 * ϕ2
+
+    @test_approx_eq ϕ3.potential ϕ2.potential * 0.1
+end
+@testset "singleton 2" begin
     ϕ1 = Factor(:A=>2, :B=>3, :C=>2)
     ϕ1.potential[:] = collect(1:length(ϕ1))
     ϕ2 = Factor(0.1)
