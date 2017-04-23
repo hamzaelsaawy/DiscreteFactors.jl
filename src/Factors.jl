@@ -1,16 +1,15 @@
 __precompile__(true)
 
 # TODO x/0 = 0
-# TODO ϕ .< 3, ϕ1 == ϕ2, etc...
+# TODO ϕ * 2, ϕ1 + 5, etc...
+# TODO ϕ .< 3, ϕ1 == ϕ2, etc... (how would this work?)
+# TODO assignment tuple indexing, e.g. ϕ["a", 1]
 # TODO push(ϕ, dims...), push(ϕ, Pair{Symbol}...)
-# TODO broadcast fallback for empty arrays
-# TODO broadcast is very poorly written ...
+# TODO better / faster broadcast
+# TODO custom error type for NegativeError
+# TODO also, better error type of others (e.g. Bounds error, DimensionMismatch, ...)
 # TODO broadcast_reduce tag-team
 # TODO map_reduce as well
-# TODO better / faster broadcast
-# TODO implement inner joins (?? what for)
-# TODO better error type for NegativeError
-# TODO also, better error type of others (e.g. Bounds error, DimensionMismatch, ...)
 # TODO add @boundscheck and @inbounds where applicable
 
 module Factors
